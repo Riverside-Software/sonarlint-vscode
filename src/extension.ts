@@ -172,7 +172,7 @@ export async function activate(context: VSCode.ExtensionContext) {
   const clientOptions: LanguageClientOptions = {
     documentSelector: DOCUMENT_SELECTOR,
     synchronize: {
-      configurationSection: 'sonarlint-abl',
+      configurationSection: ['sonarlint-abl', 'abl'],
       fileEvents: [pythonWatcher, helmWatcher, sharedConnectedModeConfigurationWatcher]
     },
     uriConverters: {
