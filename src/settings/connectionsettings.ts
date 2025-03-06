@@ -11,6 +11,7 @@ import { Connection } from '../connected/connections';
 import { SonarLintExtendedLanguageClient } from '../lsp/client';
 import { logToSonarLintOutput } from '../util/logging';
 import { ConnectionCheckResult } from '../lsp/protocol';
+import { sanitizeSonarCloudRegionSetting } from '../util/util';
 
 const SONARLINT_CATEGORY = 'sonarlint-abl';
 const CONNECTIONS_SECTION = 'connectedMode.connections';
@@ -177,9 +178,12 @@ export class ConnectionSettingsService {
 
   getSonarCloudConnections(): SonarCloudConnection[] {
     return [];
-    /*VSCode.workspace
+    /* const connections = VSCode.workspace
       .getConfiguration(SONARLINT_CATEGORY)
-      .get<SonarCloudConnection[]>(`${CONNECTIONS_SECTION}.${SONARCLOUD}`);*/
+      .get<SonarCloudConnection[]>(`${CONNECTIONS_SECTION}.${SONARCLOUD}`);
+
+    // Default to EU region for existing connections
+    return connections.map(c => ({ ...c, region: sanitizeSonarCloudRegionSetting(c.region) })); */
   }
 
   setSonarCloudConnections(scConnections: SonarCloudConnection[]) {
@@ -197,6 +201,7 @@ export class ConnectionSettingsService {
     if (connection.disableNotifications) {
       newConnection.disableNotifications = true;
     }
+    newConnection.region = connection.region;
     await this.storeUpdatedConnectionToken(connection, connection.token);
     connections.push(newConnection);
     VSCode.workspace
@@ -314,8 +319,8 @@ export class ConnectionSettingsService {
     return token;
   }
 
-  async checkNewConnection(token: string, serverOrOrganization: string, isSonarQube: boolean) {
-    return this.client.checkNewConnection(token, serverOrOrganization, isSonarQube);
+  async checkNewConnection(token: string, serverOrOrganization: string, isSonarQube: boolean, region: SonarCloudRegion) {
+    return this.client.checkNewConnection(token, serverOrOrganization, isSonarQube, region);
   }
 
   reportConnectionCheckResult(connectionCheckResult: ConnectionCheckResult) {
@@ -326,8 +331,8 @@ export class ConnectionSettingsService {
     return this.connectionCheckResults.get(connectionId);
   }
 
-  listUserOrganizations(token: string) {
-    return this.client.listUserOrganizations(token);
+  listUserOrganizations(token: string, region: string) {
+    return this.client.listUserOrganizations(token, region);
   }
 }
 
@@ -352,8 +357,11 @@ export interface SonarQubeConnection extends BaseConnection {
   serverUrl: string;
 }
 
+export type SonarCloudRegion = 'EU' | 'US';
+
 export interface SonarCloudConnection extends BaseConnection {
   organizationKey: string;
+  region?: SonarCloudRegion;
 }
 
 export function isSonarQubeConnection(connection: BaseConnection): connection is SonarQubeConnection {

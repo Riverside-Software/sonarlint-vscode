@@ -16,17 +16,19 @@ import {
   ConnectionSettingsService,
   isSonarQubeConnection,
   SonarCloudConnection,
+  SonarCloudRegion,
   SonarQubeConnection
 } from '../settings/connectionsettings';
 import { Commands } from '../util/commands';
 import * as util from '../util/util';
 import { escapeHtml, ResourceResolver } from '../util/webview';
+import { isDogfoodingEnvironment } from '../monitoring/dogfooding';
 
 let connectionSetupPanel: vscode.WebviewPanel;
 
-const sonarQubeNotificationsDocUrl = 'https://docs.sonarsource.com/sonarqube-server/latest/user-guide/sonarlint-connected-mode/';
+const sonarQubeNotificationsDocUrl = 'https://docs.sonarsource.com/sonarqube-server/latest/user-guide/connected-mode/';
 const sonarCloudNotificationsDocUrl =
-  'https://docs.sonarsource.com/sonarqube-cloud/improving/sonarlint/#smart-notifications';
+  'https://docs.sonarsource.com/sonarqube-cloud/improving/connected-mode/#smart-notifications';
 const TOKEN_RECEIVED_COMMAND = 'tokenReceived';
 const OPEN_TOKEN_GENERATION_PAGE_COMMAND = 'openTokenGenerationPage';
 const SAVE_CONNECTION_COMMAND = 'saveConnection';
@@ -65,7 +67,7 @@ export function connectToSonarQube(context: vscode.ExtensionContext) {
 
 
 export function connectToSonarCloud(context: vscode.ExtensionContext) {
-  return (organizationKey='', projectKey='', isFromSharedConfiguration=false, folderUri?: vscode.Uri) => {
+  return (organizationKey='', projectKey='', isFromSharedConfiguration=false, region: SonarCloudRegion='EU', folderUri?: vscode.Uri) => {
     const initialState = {
       conn: {
         organizationKey,
@@ -73,7 +75,8 @@ export function connectToSonarCloud(context: vscode.ExtensionContext) {
         connectionId: '',
         projectKey,
         isFromSharedConfiguration,
-        folderUri: folderUri?.toString(false)
+        folderUri: folderUri?.toString(false),
+        region
       }
     };
     initializeAndRevealPanel(context, { mode: 'create', initialState }, SONARQUBE_CLOUD_LABEL);
@@ -96,7 +99,7 @@ export function editSonarCloudConnection(context: vscode.ExtensionContext) {
     const existingConnection= await ConnectionSettingsService.instance.loadSonarCloudConnection(connectionId);
     const initialState = {
       conn: existingConnection,
-      userOrganizations: await ConnectionSettingsService.instance.listUserOrganizations(existingConnection.token)
+      userOrganizations: await ConnectionSettingsService.instance.listUserOrganizations(existingConnection.token, existingConnection.region)
     };
     initializeAndRevealPanel(context, { mode: 'update', initialState }, SONARQUBE_CLOUD_LABEL);
   };
@@ -205,7 +208,7 @@ function renderConnectionSetupPanel(context: vscode.ExtensionContext, webview: v
       </div>
       <hr>
       <form id="connectionForm">
-        ${renderServerUrlField(initialState)}
+        ${renderServerUrlField(initialState, mode)}
         ${renderGenerateTokenButton(connection, serverProductName)}
         <div class="formRowWithStatus">
           <vscode-text-field id="token" type="password" placeholder="········" required size="40"
@@ -228,21 +231,12 @@ function renderConnectionSetupPanel(context: vscode.ExtensionContext, webview: v
         <input type="hidden" id="isFromSharedConfiguration" value="${isFromSharedConfiguration}" />
         <input type="hidden" id="folderUri" value="${maybeFolderUri}" />
         <vscode-checkbox id="enableNotifications" ${!connection.disableNotifications ? 'checked' : ''}>
-          Receive notifications from ${serverProductName}
+          Receive
+          <vscode-link target="_blank" href="${serverDocUrl}">notifications</vscode-link>
+          from ${serverProductName} for the Quality Gate status and new issues assigned to you
         </vscode-checkbox>
         <input type="hidden" id="enableNotifications-initial" value="${!connection.disableNotifications}" />
-        <p>
-          You will receive
-          <vscode-link target="_blank" href="${serverDocUrl}">notifications</vscode-link>
-          from ${serverProductName} in situations like:
-        </p>
-        <ul>
-          <li>the Quality Gate status of a bound project changes</li>
-          <li>the latest analysis of a bound project on ${serverProductName} raises new issues assigned to you</li>
-        </ul>
-        <br>
         ${maybeFolderBindingParagraph}
-        <br>
         <a href='https://docs.sonarsource.com/sonarqube-for-ide/vs-code/team-features/connected-mode-setup/#connection-setup'>Need help setting up a connection?</a>
         <div id="connectionCheck" class="formRowWithStatus">
           <vscode-button id="saveConnection" disabled>${saveButtonLabel}</vscode-button>
@@ -256,14 +250,26 @@ function renderConnectionSetupPanel(context: vscode.ExtensionContext, webview: v
   </html>`;
 }
 
-function renderServerUrlField(initialState) {
+function renderServerUrlField(initialState, mode) {
   if (isSonarQubeConnection(initialState.conn)) {
     const serverUrl = escapeHtml(initialState.conn.serverUrl);
     return `<vscode-text-field id="serverUrl" type="url" placeholder="https://your.sonarqube.server/" required size="40"
     autofocus value="${serverUrl}">
       <b>Server URL</b> <vscode-badge class='tooltip'>i<span class='tooltiptext'>The base URL for your SonarQube Server instance</span></vscode-badge>
-    </vscode-text-field><span class='warning'>${serverUrl ? 'Please ensure that your Server URL matches your SonarQube Server instance.' : ''}</span>
+    </vscode-text-field><span class='warning'>${serverUrl && mode !== 'update' ? 'Please ensure that your Server URL matches your SonarQube Server instance.' : ''}</span>
     <input type="hidden" id="serverUrl-initial" value="${serverUrl}" />`;
+  }
+
+  if (isDogfoodingEnvironment()) {
+    // SonarQube Cloud connection - pre-populate region field if available
+    const region = initialState.conn.region ?? 'EU';
+    const euChecked = region === 'EU' ? 'checked' : '';
+    const usChecked = region === 'US' ? 'checked' : '';
+    return `<vscode-radio-group orientation=vertical id="region" ${mode === 'update' ? 'disabled' : ''}>
+              <label slot="label">Select the SonarQube Cloud instance you would like to connect to</label>
+              <vscode-radio ${euChecked} value="EU"><b>EU</b> - sonarcloud.io</vscode-radio>
+              <vscode-radio ${usChecked} value="US"><b>US</b> - us.sonarcloud.io</vscode-radio>
+            </vscode-radio-group>`;
   }
   return '';
 }
@@ -278,11 +284,7 @@ function renderGenerateTokenButton(connection, serverProductName) {
         <vscode-progress-ring/>
       </span>
       <span id="tokenGenerationResult"></span>
-    </div>
-    <p>
-      You can use the button above to generate a user token in your ${serverProductName} settings,
-      copy it and paste it in the field below.
-    </p>`;
+    </div>`;
 }
 
 function renderOrganizationKeyField(initialState : WebviewInitialState) {
@@ -315,7 +317,7 @@ function renderBindingParagraph(maybeFolderUri: string, maybeProjectKey: string)
   if (maybeFolderUri) {
     const folderUri = vscode.Uri.parse(maybeFolderUri);
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(folderUri);
-    return `Once the connection is saved, workspace folder '${escapeHtml(workspaceFolder.name)}' will be bound to project '${escapeHtml(maybeProjectKey)}'.`
+    return `<br>Once the connection is saved, workspace folder '${escapeHtml(workspaceFolder.name)}' will be bound to project '${escapeHtml(maybeProjectKey)}'.<br>`
   }
   return '';
 }
@@ -362,7 +364,7 @@ export async function handleMessageWithConnectionSettingsService(
       break;
     case TOKEN_CHANGED_COMMAND:
       delete message.command;
-      await getUserOrganizationsAndUpdateUI(message.token);
+      await getUserOrganizationsAndUpdateUI(message.token, message.region);
       break;
   }
 }
@@ -379,12 +381,12 @@ export function getDefaultConnectionId(message): string {
 }
 
 async function openTokenGenerationPage(message) {
-  const { serverUrl } = message;
+  const { serverUrl, region } = message;
   const cleanedUrl = cleanServerUrl(serverUrl);
   ConnectionSettingsService.instance
     .generateToken(cleanedUrl)
     .then(async token => {
-      await handleTokenReceivedNotification(token);
+      await handleTokenReceivedNotification(token, region);
     })
     .catch(
       async _error =>
@@ -402,12 +404,14 @@ async function saveConnection(
 ) {
   const isSQConnection = isSonarQubeConnection(connection);
   const serverOrOrganization = isSQConnection ? connection.serverUrl : connection.organizationKey;
+  const region = isSQConnection ? null : connection.region;
 
   await connectionSetupPanel.webview.postMessage({ command: 'connectionCheckStart' });
   const connectionCheckResult = await connectionSettingsService.checkNewConnection(
     connection.token,
     serverOrOrganization,
-    isSQConnection
+    isSQConnection,
+    region
   );
   await reportConnectionCheckResult(connectionCheckResult);
 
@@ -451,17 +455,17 @@ function removeTrailingSlashes(url: string) {
   return cleanedUrl;
 }
 
-export async function handleTokenReceivedNotification(token: string) {
+export async function handleTokenReceivedNotification(token: string, region: string) {
   if (connectionSetupPanel?.active && token) {
     await connectionSetupPanel.webview.postMessage({ command: TOKEN_RECEIVED_COMMAND, token });
     // only for SonarQube Cloud connections
     if (connectionSetupPanel.title.includes('Cloud')) {
-      await getUserOrganizationsAndUpdateUI(token);
+      await getUserOrganizationsAndUpdateUI(token, region);
     }
   }
 }
 
-async function getUserOrganizationsAndUpdateUI(token: string) {
-  const organizations = await ConnectionSettingsService.instance.listUserOrganizations(token);
+async function getUserOrganizationsAndUpdateUI(token: string, region: string) {
+  const organizations = await ConnectionSettingsService.instance.listUserOrganizations(token, region);
   await connectionSetupPanel.webview.postMessage({ command: ORGANIZATION_LIST_RECEIVED_COMMAND, organizations });
 }

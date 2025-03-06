@@ -113,12 +113,21 @@ function renderImpact(softwareQuality: string, severity: string, resolver: Resou
 </div>`;
 }
 
-function renderStandardModeSeverityDetails(ruleType: string, severity: string, resolver: ResourceResolver) {
+const severityToImpact = {
+  'info': 'info',
+  'minor': 'low',
+  'major': 'medium',
+  'critical': 'high',
+  'blocker': 'blocker'
+}
+
+function renderStandardModeSeverityDetails(ruleType: string, severity: string) {
   const ruleTypeToLowerCase = ruleType.toLocaleLowerCase('en-us');
   const severityToLowerCase = severity.toLocaleLowerCase('en-us');
   const ruleTypeImgSrc = util.resolveExtensionFile('images', 'type', `${ruleTypeToLowerCase}.svg`);
-  const severityImgSrc = util.resolveExtensionFile('images', 'severity', `${severityToLowerCase}.svg`);
-  return `<div class="impact severity-${severityToLowerCase} capsule">
+  const severityImgSrc = util.resolveExtensionFile('images', 'impact', `${severityToImpact[severityToLowerCase]}.svg`);
+  const formattedDescription = `${escapeHtml(severityToLowerCase)} ${escapeHtml(ruleTypeToLowerCase.replace(/_/g, ' '))}`;
+  return `<div class="impact severity-${severityToLowerCase} capsule" title="${formattedDescription}">
   ${fetchSVGIcon(ruleTypeImgSrc)}
   &nbsp;${clean(ruleType)}&nbsp;
   ${fetchSVGIcon(severityImgSrc)}
@@ -150,7 +159,7 @@ function renderTaxonomyInfo(rule: ShowRuleDescriptionParams, resolver: ResourceR
   } else {
     // Old type + severity taxonomy
     return `<div class="taxonomy">
-      ${renderStandardModeSeverityDetails(rule.severityDetails.type, rule.severityDetails.severity, resolver)}
+      ${renderStandardModeSeverityDetails(rule.severityDetails.type, rule.severityDetails.severity)}
 </div>`;
   }
 }
