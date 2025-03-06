@@ -11,11 +11,12 @@ import { TransportKind } from 'vscode-languageclient/node';
 import { getSonarLintConfiguration } from '../settings/settings';
 import { RequirementsData } from '../util/requirements';
 import * as util from '../util/util';
+import { maybeAddCFamilyJar } from '../cfamily/ondemand';
 
 declare let v8debug: object;
 const DEBUG = typeof v8debug === 'object' || util.startedInDebugMode(process);
 
-export function languageServerCommand(
+export async function languageServerCommand(
   context: VSCode.ExtensionContext,
   requirements: RequirementsData
 ) {
@@ -41,12 +42,12 @@ export function languageServerCommand(
   // params.push(Path.resolve(context.extensionPath, 'analyzers', 'sonarpython.jar'));
   // params.push(Path.resolve(context.extensionPath, 'analyzers', 'sonarhtml.jar'));
   // params.push(Path.resolve(context.extensionPath, 'analyzers', 'sonarxml.jar'));
-  // params.push(Path.resolve(context.extensionPath, 'analyzers', 'sonarcfamily.jar'));
   // params.push(Path.resolve(context.extensionPath, 'analyzers', 'sonartext.jar'));
   // params.push(Path.resolve(context.extensionPath, 'analyzers', 'sonariac.jar'));
   // params.push(Path.resolve(context.extensionPath, 'analyzers', 'sonarlintomnisharp.jar'));
   params.push(Path.resolve(context.extensionPath, 'analyzers', 'sonaroe.jar'));
   params.push(Path.resolve(context.extensionPath, 'analyzers', 'progress.jar'));
+  // await maybeAddCFamilyJar(params);
 
   return { command: javaExecutablePath, args: params, transport: TransportKind.stdio };
 }
