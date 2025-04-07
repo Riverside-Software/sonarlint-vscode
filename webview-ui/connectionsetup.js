@@ -7,6 +7,8 @@
 'use strict';
 
 const vscode = acquireVsCodeApi();
+import { selectFirstOrganization, addNoOrgInfoMessage,
+   addManualInputOption, addDefaultSelection, populateDropdown } from './organizationsDropdownHelper.js';
 
 window.addEventListener('load', init);
 window.addEventListener('message', handleMessage);
@@ -36,7 +38,6 @@ function init() {
   }
   byId('generateToken').addEventListener('click', onClickGenerateToken);
   byId('token').addEventListener('change', onChangeToken);
-  byId('token').addEventListener('keyup', onChangeToken);
   byId('enableNotifications').addEventListener('change', onChangeEnableNotifications);
   byId('saveConnection').addEventListener('click', onClickSaveConnection);
   byId('sonarqubeCloudFreeSignUp')?.addEventListener('click', onClickSonarCloudFreeSignupLink);
@@ -62,11 +63,34 @@ function onChangeServerUrl() {
 
 function onChangeOrganizationKey() {
   saveState();
+  const manualInput = byId('manualOrganizationKey');
   if (byId('shouldGenerateConnectionId').value === 'true') {
-    byId('connectionId').value = sanitize(byId('organizationKey').value);
+    const organizationKey = byId('organizationKey');
+    const value = organizationKey.value === 'organizationKeyManualInput' 
+      ? byId('manualOrganizationKey').value 
+      : organizationKey.value;
+    byId('connectionId').value = sanitize(value);
   }
   if (byId('organizationKey').value) {
     byId('organizationKey').setAttribute('selected', true);
+    if (byId('organizationKey').value === 'organizationKeyManualInput') {
+      console.log('about to show manual input');
+      manualInput.removeAttribute('hidden');
+      manualInput.focus();
+      // Add listeners to sync manual input with organizationKey
+      manualInput.addEventListener('change', () => {
+        byId('organizationKey').value = 'organizationKeyManualInput';
+        byId('organizationKey').setAttribute('selected', true);
+        onChangeOrganizationKey();
+      });
+      manualInput.addEventListener('keyup', () => {
+        byId('organizationKey').value = 'organizationKeyManualInput';
+        byId('organizationKey').setAttribute('selected', true);
+        onChangeOrganizationKey();
+      });
+    } else {
+      manualInput.setAttribute('hidden', true);
+    }
   }
   toggleSaveConnectionButton();
 }
@@ -101,10 +125,11 @@ function isValidUrl(value) {
 }
 
 function hasValidOrganizationKey() {
-  /**
-   * @type {HTMLInputElement}
-   */
   const organizationKeyInput = byId('organizationKey');
+  if (organizationKeyInput.value === 'other') {
+    const manualInput = byId('manualOrganizationKey');
+    return manualInput && manualInput.value.length > 0;
+  }
   return organizationKeyInput.getAttribute('selected') && organizationKeyInput.value.length > 0;
 }
 
@@ -113,20 +138,24 @@ function onClickGenerateToken() {
    * @type {HTMLInputElement}
    */
   const serverUrlElement = byId('serverUrl');
+  const initialOrganizationKey = byId('organizationKey-initial');
   let serverUrl;
   let region = null;
+  let preFilledOrganizationKey = '';
   if (serverUrlElement) {
     serverUrl = serverUrlElement.value;
   } else {
     const regionField = byId('region');
     region = regionField ? regionField.value : 'EU';
     serverUrl = region === 'US' ? 'https://sonarqube.us/' : 'https://sonarcloud.io';
+    preFilledOrganizationKey = initialOrganizationKey ? initialOrganizationKey.value : '';
   }
   byId('tokenGenerationProgress').classList.remove('hidden');
   vscode.postMessage({
     command: 'openTokenGenerationPage',
     serverUrl,
-    region
+    region,
+    preFilledOrganizationKey
   });
 }
 
@@ -134,10 +163,12 @@ function onChangeToken() {
   saveState();
   toggleSaveConnectionButton();
   const regionField = byId('region');
+  const initialOrganizationKey = byId('organizationKey-initial');
   const tokenChangedMessage = {
     command: 'tokenChanged',
     token: byId('token').value,
-    region: regionField ? regionField.value : 'EU'
+    region: regionField ? regionField.value : 'EU',
+    preFilledOrganizationKey: initialOrganizationKey ? initialOrganizationKey.value : ''
   };
   vscode.postMessage(tokenChangedMessage);
 }
@@ -184,7 +215,7 @@ function onClickSaveConnection() {
   }
   const organizationKey = byId('organizationKey');
   if (organizationKey) {
-    saveConnectionMessage.organizationKey = organizationKey.value;
+    saveConnectionMessage.organizationKey = organizationKey.value === 'organizationKeyManualInput' ? byId('manualOrganizationKey').value : organizationKey.value;
   }
   vscode.postMessage(saveConnectionMessage);
 }
@@ -274,7 +305,7 @@ function handleMessage(event) {
       tokenGenerationPageIsOpen(message.errorMessage);
       break;
     case 'organizationListReceived':
-      replaceOrganizationDropdown(message.organizations);
+      replaceOrganizationDropdown(message.organizations, message.preFilledOrganizationKey);
       break;
   }
 }
@@ -304,34 +335,36 @@ function populateTokenField(token) {
   saveState();
 }
 
-function replaceOrganizationDropdown(organizations) {
+function replaceOrganizationDropdown(organizations, preFilledOrganizationKey) {
   const dropdown = byId('organizationKey');
   dropdown.innerHTML = '';
-  if (organizations.length === 0) {
-    // do something to indicate that there are no organizations
+  // Remove any existing messages
+  const existingMessage = dropdown.parentElement.querySelector('.no-org-info-message');
+  if (existingMessage) {
+    existingMessage.remove();
+  }
+  // If there is a pre-filled organization key, select it and populate the dropdown; Otherwise, go with the normal flow
+  if (preFilledOrganizationKey) {
+    // Remove the pre-filled organization key from the list of organizations so that it's not duplicated in the dropdown
+    const maybeMatchingOrganization = organizations.find(org => org.key === preFilledOrganizationKey);
+    const preFilledOrganization = maybeMatchingOrganization || { key: preFilledOrganizationKey, name: preFilledOrganizationKey, description: '' };
+    organizations = organizations.filter(org => org.key !== preFilledOrganizationKey);
+    selectFirstOrganization(dropdown, [preFilledOrganization, ...organizations]);
+    dropdown.dispatchEvent(new Event('change'));
+    populateDropdown(dropdown, organizations);
+  } else if (organizations.length === 0) {
+    addNoOrgInfoMessage(dropdown);
+    // Trigger change event with manual input selection
+    dropdown.dispatchEvent(new Event('change'));
   } else if (organizations.length === 1) {
-    const option = document.createElement('vscode-option')
-    option.setAttribute('value', organizations[0].key)
-    option.innerText = organizations[0].name;
-    dropdown.appendChild(option);
-    option.selected = true;
-    dropdown.value = organizations[0].key;
-    dropdown.setAttribute('selected', true);
+    selectFirstOrganization(dropdown, organizations);
     dropdown.dispatchEvent(new Event('change'));
   } else {
-    const defaultOption = document.createElement('option');
-    defaultOption.innerText = 'Select your organization...';
-    defaultOption.setAttribute('value', '');
-    defaultOption.selected = true;
-    dropdown.appendChild(defaultOption);
-    for (const organization of organizations) {
-      const option = document.createElement('vscode-option')
-      option.setAttribute('value', organization.key)
-      option.selected = false;
-      option.innerText = organization.name;
-      dropdown.appendChild(option);
-    }
+    addDefaultSelection(dropdown);
+    populateDropdown(dropdown, organizations);
   }
+  
+  addManualInputOption(dropdown);
 }
 
 function tokenGenerationPageIsOpen(errorMessage) {

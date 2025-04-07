@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.18.99000",
+  "version": "4.19.99000",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -15,7 +15,7 @@
   },
   "license": "SEE LICENSE IN LICENSE.txt",
   "engines": {
-    "vscode": "^1.73.0"
+    "vscode": "^1.75.0"
   },
   "categories": [
     "Linters"
@@ -467,11 +467,7 @@
         "category": "ABL SonarQube",
         "icon": "$(export)",
         "enablement": "view == SonarLint-abl.ConnectedMode"
-      },
-      {
-        "command": "SonarLint.ABL.CheckMonitoring",
-        "title": "Send A Monitoring Event",
-        "category": "ABL SonarQube"
+
       }
     ],
     "viewsContainers": {

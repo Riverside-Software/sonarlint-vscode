@@ -297,16 +297,20 @@ function renderOrganizationKeyField(initialState : WebviewInitialState) {
   if (initialState.userOrganizations && initialState.userOrganizations.length > 0) {
     for (const userOrganization of initialState.userOrganizations) {
       if (organizationKey !== userOrganization.key) {
-        prePopulatedOptions += `<vscode-option>${userOrganization.name}</vscode-option>`;
+        prePopulatedOptions += `<vscode-option value="${userOrganization.key}">${userOrganization.name}</vscode-option>`;
       }
     }
+    // Always give the option to manually input the organization key
+    prePopulatedOptions += `<vscode-option value="organizationKeyManualInput">Other... (provide organization key)</vscode-option>`;
   }
   return `
     <label for="organizationKey">Organization</label>
     <div class="dropdown-container">    
-      <vscode-dropdown id="organizationKey" required position="below">
-      ${prePopulatedOptions}
+      <vscode-dropdown id="organizationKey" required position="below" size="40">
+        ${prePopulatedOptions}
       </vscode-dropdown>
+      <vscode-text-field id="manualOrganizationKey" type="text" placeholder="Enter organization key" required size="40"
+        title="Enter the organization key manually" value="${organizationKey}" hidden ></vscode-text-field>
     </div>
     <input type="hidden" id="organizationKey-initial" value="${organizationKey}" />`;
 }
@@ -362,7 +366,7 @@ export async function handleMessageWithConnectionSettingsService(
       break;
     case TOKEN_CHANGED_COMMAND:
       delete message.command;
-      await getUserOrganizationsAndUpdateUI(message.token, message.region);
+      await getUserOrganizationsAndUpdateUI(message.token, message.region, message.preFilledOrganizationKey);
       break;
   }
 }
@@ -379,12 +383,12 @@ export function getDefaultConnectionId(message): string {
 }
 
 async function openTokenGenerationPage(message) {
-  const { serverUrl, region } = message;
+  const { serverUrl, region, preFilledOrganizationKey } = message;
   const cleanedUrl = cleanServerUrl(serverUrl);
   ConnectionSettingsService.instance
     .generateToken(cleanedUrl)
     .then(async token => {
-      await handleTokenReceivedNotification(token, region);
+      await handleTokenReceivedNotification(token, region, preFilledOrganizationKey);
     })
     .catch(
       async _error =>
@@ -453,17 +457,17 @@ function removeTrailingSlashes(url: string) {
   return cleanedUrl;
 }
 
-export async function handleTokenReceivedNotification(token: string, region: string) {
+export async function handleTokenReceivedNotification(token: string, region: string, preFilledOrganizationKey: string) {
   if (connectionSetupPanel?.active && token) {
     await connectionSetupPanel.webview.postMessage({ command: TOKEN_RECEIVED_COMMAND, token });
     // only for SonarQube Cloud connections
     if (connectionSetupPanel.title.includes('Cloud')) {
-      await getUserOrganizationsAndUpdateUI(token, region);
+      await getUserOrganizationsAndUpdateUI(token, region, preFilledOrganizationKey);
     }
   }
 }
 
-async function getUserOrganizationsAndUpdateUI(token: string, region: string) {
+async function getUserOrganizationsAndUpdateUI(token: string, region: string, preFilledOrganizationKey: string) {
   const organizations = await ConnectionSettingsService.instance.listUserOrganizations(token, region);
-  await connectionSetupPanel.webview.postMessage({ command: ORGANIZATION_LIST_RECEIVED_COMMAND, organizations });
+  await connectionSetupPanel.webview.postMessage({ command: ORGANIZATION_LIST_RECEIVED_COMMAND, organizations, preFilledOrganizationKey });
 }
