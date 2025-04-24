@@ -98,6 +98,7 @@ let allHotspotsView: VSCode.TreeView<HotspotTreeViewItem>;
 let helpAndFeedbackTreeDataProvider: HelpAndFeedbackTreeDataProvider;
 let helpAndFeedbackView: VSCode.TreeView<HelpAndFeedbackLink>;
 let taintVulnerabilityCollection: VSCode.DiagnosticCollection;
+const currentProgress: Record<string, { progress: VSCode.Progress<{ increment?: number }>, resolve: () => void } | undefined> = {};
 
 async function runJavaServer(context: VSCode.ExtensionContext): Promise<StreamInfo> {
   try {
@@ -266,6 +267,38 @@ export async function activate(context: VSCode.ExtensionContext) {
   IssueService.init(languageClient, secondaryLocationsTree, issueLocationsView);
 
   context.subscriptions.push(languageClient.onNotification(ShowIssueNotification.type, IssueService.showIssue));
+  
+  context.subscriptions.push(languageClient.onNotification(protocol.StartProgressNotification.type, (params: protocol.StartProgressNotificationParams) => {
+    const taskId = params.taskId;
+    if (currentProgress[taskId]) {
+      // If there's an existing progress, resolve it first
+      currentProgress[taskId].resolve();
+    }
+    
+    VSCode.window.withProgress(
+      {
+        location: VSCode.ProgressLocation.Notification,
+        title: 'SonarQube for IDE',
+        cancellable: false
+      },
+      (progress) => {
+        return new Promise<void>((resolve) => {
+          currentProgress[taskId] = { progress, resolve };
+          if (params.message) {
+            progress.report({ message: params.message });
+          }
+        });
+      }
+    );
+  }));
+
+  context.subscriptions.push(languageClient.onNotification(protocol.EndProgressNotification.type, (params: protocol.EndProgressNotificationParams) => {
+    const taskId = params.taskId
+    if (currentProgress[taskId]) {
+      currentProgress[taskId].resolve();
+      currentProgress[taskId] = undefined;
+    }
+  }));
 
   VSCode.workspace.onDidChangeConfiguration(async event => {
     if (event.affectsConfiguration('sonarlint-abl.rules')) {
