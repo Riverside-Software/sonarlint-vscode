@@ -18,7 +18,7 @@ import { configureCompilationDatabase, notifyMissingCompileCommands } from './cf
 import { AutoBindingService } from './connected/autobinding';
 import { assistCreatingConnection } from './connected/assistCreatingConnection';
 import { BindingService, showSoonUnsupportedVersionMessage } from './connected/binding';
-import { AllConnectionsTreeDataProvider } from './connected/connections';
+import { AllConnectionsTreeDataProvider, ConnectionsNode, ConnectionType } from './connected/connections';
 import {
   connectToSonarCloud,
   connectToSonarQube,
@@ -75,6 +75,7 @@ import { maybeShowWiderLanguageSupportNotification } from './promotions/promotio
 import { SharedConnectedModeSettingsService } from './connected/sharedConnectedModeSettingsService';
 import { FileSystemServiceImpl } from './fileSystem/fileSystemServiceImpl';
 import { FixSuggestionService } from './fixSuggestions/fixSuggestionsService';
+import { ContextManager } from './contextManager';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -92,6 +93,7 @@ let issueLocationsView: VSCode.TreeView<LocationTreeItem>;
 let languageClient: SonarLintExtendedLanguageClient;
 let allRulesTreeDataProvider: AllRulesTreeDataProvider;
 let allRulesView: VSCode.TreeView<LanguageNode>;
+let allConnectionsView: VSCode.TreeView<ConnectionsNode>;
 let allConnectionsTreeDataProvider: AllConnectionsTreeDataProvider;
 let hotspotsTreeDataProvider: AllHotspotsTreeDataProvider;
 let allHotspotsView: VSCode.TreeView<HotspotTreeViewItem>;
@@ -234,6 +236,7 @@ export async function activate(context: VSCode.ExtensionContext) {
     /* ignored */
   });
   FixSuggestionService.init(languageClient);
+  ContextManager.instance.setConnectedModeContext();
 
   installCustomRequestHandlers(context);
 
@@ -307,6 +310,7 @@ export async function activate(context: VSCode.ExtensionContext) {
     }
     if (event.affectsConfiguration('sonarlint-abl.connectedMode')) {
       allConnectionsTreeDataProvider.refresh();
+      ContextManager.instance.setConnectedModeContext();
     }
     if (event.affectsConfiguration('sonarlint-abl.focusOnNewCode')) {
       NewCodeDefinitionService.instance.updateFocusOnNewCodeState();
@@ -327,7 +331,7 @@ export async function activate(context: VSCode.ExtensionContext) {
 
   allConnectionsTreeDataProvider = new AllConnectionsTreeDataProvider(languageClient);
 
-  const allConnectionsView = VSCode.window.createTreeView('SonarLint-abl.ConnectedMode', {
+  allConnectionsView = VSCode.window.createTreeView('SonarLint.ConnectedMode', {
     treeDataProvider: allConnectionsTreeDataProvider
   });
   context.subscriptions.push(allConnectionsView);
@@ -338,6 +342,12 @@ export async function activate(context: VSCode.ExtensionContext) {
   });
 
   context.subscriptions.push(allHotspotsView);
+
+  helpAndFeedbackTreeDataProvider = new HelpAndFeedbackTreeDataProvider();
+  helpAndFeedbackView = VSCode.window.createTreeView('SonarLint-abl.HelpAndFeedback', {
+    treeDataProvider: helpAndFeedbackTreeDataProvider
+  });
+  context.subscriptions.push(helpAndFeedbackView);
 
   context.subscriptions.push(onConfigurationChange());
 
@@ -588,6 +598,13 @@ function registerCommands(context: VSCode.ExtensionContext) {
       IssueService.instance.analyseOpenFileIgnoringExcludes()
     )
   );
+
+  context.subscriptions.push(VSCode.commands.registerCommand(Commands.FOCUS_ON_CONNECTION, async (connectionType: ConnectionType, connectionId?: string) => {
+      const connectionsOfType = await allConnectionsTreeDataProvider.getConnections(connectionType)
+      // find connection with ID, or focus on the first one of given type
+      const targetConnection = connectionsOfType.find(c => c.id === connectionId) ?? connectionsOfType[0];
+      allConnectionsView.reveal(targetConnection, {select: true, focus: true, expand: false});
+  }));
 }
 
 async function scanFolderForHotspotsCommandHandler(folderUri: VSCode.Uri) {
@@ -733,5 +750,6 @@ export function deactivate(): Thenable<void> {
   if (!languageClient) {
     return undefined;
   }
+  ContextManager.instance.resetAllContexts();
   return languageClient.stop();
 }

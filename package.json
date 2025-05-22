@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.20.99000",
+  "version": "4.21.99000",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -483,14 +483,11 @@
       "explorer": [
         {
           "id": "SonarLint-abl.IssueLocations",
-          "name": "SonarQube Issue Locations"
+          "name": "SonarQube Issue Locations",
+          "when": "sonarqube.hasExploredIssueLocations"
         }
       ],
       "SonarLintABL": [
-        {
-          "id": "SonarLint-abl.AllRules",
-          "name": "Rules"
-        },
         {
           "id": "SonarLint-abl.ConnectedMode",
           "name": "Connected Mode"
@@ -498,7 +495,18 @@
         {
           "id": "SonarLint-abl.SecurityHotspots",
           "name": "Security Hotspots",
-          "visibility": "collapsed"
+          "visibility": "collapsed",
+          "when": "sonarqube.someFoldersUseConnectedMode"
+        },
+        {
+          "id": "SonarLint-abl.AllRules",
+          "name": "Rules",
+          "visibility": "collapsed",
+          "when": "sonarqube.someFoldersUseStandaloneMode"
+        },
+        {
+          "id": "SonarLint-abl.HelpAndFeedback",
+          "name": "Help and Feedback"
         }
       ]
     },
@@ -513,7 +521,7 @@
       },
       {
         "view": "SonarLint-abl.SecurityHotspots",
-        "contents": "Please ensure a connection to [SonarQube Server](command:SonarLint.ABL.HelpAndFeedbackLinkClicked?%22sonarQubeProductPage%22) 9.9+ is set up. Detected Security Hotspots will be displayed here. [Learn More](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/security-hotspots).\n Using the In Whole Folder feature may consume excessive resources depending on the size of your project. Please check the [documentation](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/security-hotspots/#reporting-security-hotspots-in-the-whole-folder) for recommendations to minimize the impact of a full project analysis."
+        "contents": "Security Hotspots detected in open files will be displayed here. [Learn More](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/security-hotspots).\n Using the In Whole Folder feature may consume excessive resources depending on the size of your project. Please check the [documentation](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/security-hotspots/#reporting-security-hotspots-in-the-whole-folder) for recommendations to minimize the impact of a full project analysis."
       }
     ],
     "walkthroughs": [
@@ -752,10 +760,6 @@
     }
   },
   "main": "./dist/extension",
-  "files": [
-    "server/sonarlint-ls.jar",
-    "analyzers"
-  ],
   "scripts": {
     "vscode:prepublish": "node build-sonarlint/prepare.mjs && webpack --mode production",
     "compile": "tsc -p ./",
@@ -771,7 +775,7 @@
     "package-all": "node build-sonarlint/package-all.mjs"
   },
   "dependencies": {
-    "@openpgp/web-stream-tools": "0.1.3",
+    "@openpgp/web-stream-tools": "^0.1.3",
     "@sentry/node": "^8.44.0",
     "@vscode/webview-ui-toolkit": "1.0.0",
     "@xmldom/xmldom": "^0.9.6",
@@ -780,11 +784,11 @@
     "expand-home-dir": "0.0.3",
     "find-java-home": "1.2.2",
     "follow-redirects": "^1.15.6",
-    "globby": "14.1.0",
+    "globby": "^14.1.0",
     "highlight.js": "^11.7.0",
-    "inly": "4.0.8",
+    "inly": "^5.0.1",
     "luxon": "^3.2.1",
-    "openpgp": "6.1.0",
+    "openpgp": "^6.1.0",
     "node-html-parser": "^6.1.5",
     "path-exists": "4.0.0",
     "properties": "1.2.1",
@@ -806,8 +810,8 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.9.3",
     "@types/vscode": "^1.73.1",
-    "@vscode/test-electron": "^2.4.1",
-    "@vscode/vsce": "2.21.1",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.3.2",
     "chai": "^4.3.10",
     "crypto": "^0.0.3",
     "dateformat": "^2.0.0",
@@ -816,19 +820,19 @@
     "fancy-log": "1.3.3",
     "fs-extra": "^11.1.1",
     "glob": "^8.0.3",
-    "istanbul-lib-coverage": "^3.2.0",
-    "istanbul-lib-instrument": "^6.0.0",
+    "istanbul-lib-coverage": "^3.2.2",
+    "istanbul-lib-instrument": "^6.0.3",
     "istanbul-lib-report": "^3.0.1",
-    "istanbul-lib-source-maps": "^4.0.1",
-    "istanbul-reports": "^3.1.6",
+    "istanbul-lib-source-maps": "^5.0.6",
+    "istanbul-reports": "^3.1.7",
     "map-stream": "^0.1.0",
     "mocha": "^11.0.1",
     "mocha-multi-reporters": "^1.5.1",
     "prettier": "2.0.5",
-    "sonarqube-scanner": "^4.2.6",
+    "sonarqube-scanner": "^4.3.0",
     "stream": "^0.0.2",
     "through2": "^2.0.5",
-    "ts-loader": "^9.5.1",
+    "ts-loader": "^9.5.2",
     "typescript": "^4.9.5",
     "unzipper": "^0.12.3",
     "vinyl": "^2.2.1",

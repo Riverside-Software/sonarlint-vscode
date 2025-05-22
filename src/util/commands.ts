@@ -72,4 +72,6 @@ export namespace Commands {
   export const ANALYSE_OPEN_FILE = 'SonarLint.ABL.AnalyseOpenFile';
   export const NEW_CODE_DEFINITION = 'SonarLint.ABL.NewCodeDefinition';
   export const AUTO_BIND_WORKSPACE_FOLDERS = 'SonarLint.ABL.AutoBindWorkspaceFolders';
+
+  export const FOCUS_ON_CONNECTION = 'SonarLint.FocusOnConnection';
 }

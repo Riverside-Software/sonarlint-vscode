@@ -121,9 +121,13 @@ function finishSetupAndRevealPanel(serverProductName: string) {
 }
 
 export async function reportConnectionCheckResult(result: ConnectionCheckResult) {
-  if (connectionSetupPanel?.webview) {
-    const command = result.success ? 'connectionCheckSuccess' : 'connectionCheckFailure';
-    connectionSetupPanel.webview.postMessage({ command, ...result });
+  if (connectionSetupPanel?.webview && result.success) {
+    // connection check was successful; close the webview automatically and show a visible notification instead
+    vscode.window.showInformationMessage(
+      `Connection with '${result.connectionId}' was successful!`)
+    connectionSetupPanel.dispose();
+  } else if (connectionSetupPanel?.webview) {
+    connectionSetupPanel.webview.postMessage({ command: 'connectionCheckFailure', ...result });
   } else if (result.success) {
     vscode.window.showInformationMessage(`Connection with '${result.connectionId}' was successful!`);
   } else {
@@ -422,19 +426,9 @@ async function saveConnection(
   }
 
   if (isSQConnection) {
-    const foundConnection = await connectionSettingsService.loadSonarQubeConnection(connection.connectionId);
-    if (foundConnection) {
-      await connectionSettingsService.updateSonarQubeConnection(connection);
-    } else {
-      await connectionSettingsService.addSonarQubeConnection(connection);
-    }
+    await saveSonarQubeServerConnection(connection, connectionSettingsService);
   } else {
-    const foundConnection = await connectionSettingsService.loadSonarCloudConnection(connection.connectionId);
-    if (foundConnection) {
-      await connectionSettingsService.updateSonarCloudConnection(connection);
-    } else {
-      await connectionSettingsService.addSonarCloudConnection(connection);
-    }
+    await saveSonarQubeCloudConnection(connection, connectionSettingsService);
   }
 
   if (connection.projectKey && connection.folderUri) {
@@ -442,6 +436,26 @@ async function saveConnection(
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(folderUri);
     const bindingCreationMode = connection.isFromSharedConfiguration ? BindingCreationMode.IMPORTED : BindingCreationMode.AUTOMATIC;
     await BindingService.instance.saveBinding(connection.projectKey, workspaceFolder, bindingCreationMode, connection.connectionId);
+  }
+
+  vscode.commands.executeCommand(Commands.FOCUS_ON_CONNECTION, isSQConnection ? '__sonarqube__' : '__sonarcloud__', connection.connectionId);
+}
+
+async function saveSonarQubeServerConnection(connection: SonarQubeConnection, connectionSettingsService: ConnectionSettingsService) {
+  const foundConnection = await connectionSettingsService.loadSonarQubeConnection(connection.connectionId);
+  if (foundConnection) {
+    await connectionSettingsService.updateSonarQubeConnection(connection);
+  } else {
+    await connectionSettingsService.addSonarQubeConnection(connection);
+  }
+}
+
+async function saveSonarQubeCloudConnection(connection: SonarCloudConnection, connectionSettingsService: ConnectionSettingsService) {
+  const foundConnection = await connectionSettingsService.loadSonarCloudConnection(connection.connectionId);
+  if (foundConnection) {
+    await connectionSettingsService.updateSonarCloudConnection(connection);
+  } else {
+    await connectionSettingsService.addSonarCloudConnection(connection);
   }
 }
 
