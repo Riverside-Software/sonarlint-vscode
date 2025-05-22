@@ -30,6 +30,7 @@ export namespace Commands {
   export const SHOW_ALL_RULES = 'SonarLint.ABL.ShowAllRules';
   export const SHOW_ACTIVE_RULES = 'SonarLint.ABL.ShowActiveRules';
   export const SHOW_INACTIVE_RULES = 'SonarLint.ABL.ShowInactiveRules';
+  export const ENABLE_LOGS_AND_SHOW_OUTPUT = 'SonarLint.ABL.EnableLogsAndShowOutput';
   export const SHOW_SONARLINT_OUTPUT = 'SonarLint.ABL.ShowSonarLintOutput';
   export const OPEN_RULE_BY_KEY = 'SonarLint.ABL.OpenRuleByKey';
   export const FIND_RULE_BY_KEY = 'SonarLint.ABL.FindRuleByKey';

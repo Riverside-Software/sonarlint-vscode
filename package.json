@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.21.99000",
+  "version": "4.22.99000",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -462,6 +462,11 @@
         "category": "ABL SonarQube"
       },
       {
+        "command": "SonarLint.ABL.EnableLogsAndShowOutput",
+        "title": "Enable Verbose Logging and Show Output",
+        "category": "SonarQube"
+      },
+      {
         "command": "SonarLint.ABL.ShareConnectedModeConfiguration",
         "title": "Share Connected Mode Configuration",
         "category": "ABL SonarQube",
@@ -488,6 +493,12 @@
         }
       ],
       "SonarLintABL": [
+        {
+          "type": "tree",
+          "id": "SonarQube-abl.GetStarted",
+          "name": "Get Started",
+          "when": "sonarqube.shouldShowGetStartedView"
+        },
         {
           "id": "SonarLint-abl.ConnectedMode",
           "name": "Connected Mode"
@@ -517,47 +528,42 @@
       },
       {
         "view": "SonarLint-abl.ConnectedMode",
-        "contents": "[Connected Mode](command:SonarLint.ABL.HelpAndFeedbackLinkClicked?%22connectedModeDocs%22) links SonarQube for VS Code to SonarQube Server to apply the same Clean Code standards as your team.\n\n[Add SonarQube Server Connection](command:SonarLint.ABL.ConnectToSonarQube)\n\nAnalyze more languages, detect more issues on the whole project, receive notifications about the quality gate status, and more.\n\nQuality Profiles and file exclusion settings defined on the server are shared between all connected users.\n\nDiscover which option is the best for your team [here](command:SonarLint.ABL.HelpAndFeedbackLinkClicked?%22compareServerProducts%22)."
+        "contents": "[Connected Mode](command:SonarLint.ABL.HelpAndFeedbackLinkClicked?%22connectedModeDocs%22) links CABL to SonarQube Server. \n\n[Connect to SonarQube Server](command:SonarLint.ABL.ConnectToSonarQube)\n\nAnalyze more languages, detect more issues on the whole project, receive notifications about the quality gate status, and more."
       },
       {
         "view": "SonarLint-abl.SecurityHotspots",
         "contents": "Security Hotspots detected in open files will be displayed here. [Learn More](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/security-hotspots).\n Using the In Whole Folder feature may consume excessive resources depending on the size of your project. Please check the [documentation](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/security-hotspots/#reporting-security-hotspots-in-the-whole-folder) for recommendations to minimize the impact of a full project analysis."
+      },
+      {
+        "view": "SonarQube-abl.GetStarted",
+        "contents": "Automatically find and fix code quality and security issues as you write, using powerful linting tools built right into your code editor.\n\n[Get Started with SonarQube for IDE](command:SonarLint.HelpAndFeedbackLinkClicked?%22sonarLintWalkthrough%22) $(arrow-right)"
       }
     ],
     "walkthroughs": [
       {
         "id": "SonarLint.walkthrough",
-        "title": "Welcome to SonarQube for VS Code!",
-        "description": "Your Clean Code journey starts here.",
+        "title": "Welcome to SonarQube for IDE!",
+        "description": "Start left and discover issues early.\nSonarQube for IDE empowers you to find & fix code issues in real time, in 15+ languages.",
         "steps": [
           {
-            "id": "SonarLint.inAction",
-            "title": "$(rocket) New to SonarQube for VS Code? See it in action",
-            "description": "SonarQube for VS Code supports analysis of 15+ languages including JS/TS, Java, Python, CSS/HTML, C, C++, C#, and [more](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/rules). SonarQube for VS Code detects issues in all files **open** in the editor. For project-level analysis, check out [SonarQube Cloud](command:SonarLint.HelpAndFeedbackLinkClicked?%22sonarCloudProductPage%22).\n\nThe best way to get started is to see it in action!\n[Open Sample File](command:SonarLint.OpenSample)",
+            "id": "SonarQube.getStarted",
+            "title": "$(rocket) New to SonarQube?",
+            "description": "Unlock more languages and security rules.\n[Create Free Account](command:SonarLint.HelpAndFeedbackLinkClicked?%22sonarqubeCloudFreeSignUp%22)",
             "media": {
-              "markdown": "walkthrough/empty.md"
+              "image": "walkthrough/abstractServerProduct.svg",
+              "altText": "SonarQube Cloud illustration"
             },
             "completionEvents": [
-              "onView:workbench.panel.markers.view"
-            ]
-          },
-          {
-            "id": "SonarLint.learnMoreAboutIssues",
-            "title": "$(book) Learn more about issues",
-            "description": "Check the [Problems view](command:workbench.panel.markers.view.focus): SonarQube for VS Code has found something $(warning).\nRight-click on the issue found by SonarQube for VS Code.\nOpen the rule description: SonarQube for VS Code clearly explains why this is an issue.\nFor certain rules and issues, SonarQube for VS Code will suggest available Quick Fixes.",
-            "media": {
-              "markdown": "walkthrough/empty.md"
-            },
-            "completionEvents": [
-              "onCommand:SonarLint.ABL.OpenStandaloneRuleDesc"
+              "onLink:https://www.sonarsource.com/products/sonarcloud/signup-free/"
             ]
           },
           {
             "id": "SonarLint.connectedModeIntro",
-            "title": "$(link) Connect with your team",
-            "description": "Apply the same Clean Code standards as your team by using SonarQube for VS Code in Connected Mode with [SonarQube Server](command:SonarLint.ABL.HelpAndFeedbackLinkClicked?%22sonarQubeProductPage%22).\n**Already using SonarQube Server?** Set up connection in the CONNECTED MODE view.\n[Set up Connection](command:SonarLint.ABL.ConnectedMode.focus)",
+            "title": "$(shield) Taint Vulnerabilities and More",
+            "description": "Enable advanced analysis (including [Taint Vulnerabilities](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/taint-vulnerabilities/) and wider language support) by connecting to SonarQube (Server, Cloud). Also, benefit from the [AI CodeFix](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/ai-capabilities/) within your IDE.\n[Set up Connection](command:SonarLint.ConnectedMode.focus)\n",
             "media": {
-              "markdown": "walkthrough/empty.md"
+              "image": "walkthrough/taintVulnerabilities.svg",
+              "altText": "SonarQube for IDE Taint Vulnerabilities"
             },
             "completionEvents": [
               "onView:SonarLint-abl.ConnectedMode"
@@ -566,11 +572,26 @@
           {
             "id": "SonarLint.reachOut",
             "title": "$(comment-discussion) Share feedback or ask for help",
-            "description": "You suspect your code has issues but don't see any problems detected by SonarQube for VS Code? [Enable verbose logging](command:SonarLint.ABL.EnableVerboseLogs) and check the output in the CABL Output window\n[Check Output](command:SonarLint.ABL.ShowSonarLintOutput)\n\nYou'd like to learn more about SonarQube for VS Code, or give us feedback? Check out the [Help and Feedback view](command:SonarLint.ABL.HelpAndFeedback.focus)\n\n",
+            "description": "You'd like to learn more about SonarQube for IDE, or give us feedback? Check out the [Help and Feedback view](command:SonarLint.HelpAndFeedback.focus).\n",
             "media": {
-              "markdown": "walkthrough/empty.md"
+              "image": "walkthrough/community.svg",
+              "altText": "Sonar Community"
             },
-            "completionEvents": []
+            "completionEvents": [
+              "onView:SonarLint.HelpAndFeedback"
+            ]
+          },
+          {
+            "id": "SonarLint.resolveIssues",
+            "title": "$(bug) Enough theory, let's fix some code!",
+            "description": "Open our sample file and get started instantly:\n[Open Sample File](command:SonarLint.OpenSample)\nCheck the [Problems view](command:workbench.panel.markers.view.focus): SonarQube has found something $(warning).\nRight-click on the issue.\nShow issue details: SonarQube explains why this is an issue.\nFor certain rules and issues, SonarQube for IDE will suggest available Quick Fixes.",
+            "media": {
+              "image": "walkthrough/issueDetected.svg",
+              "altText": "SonarQube for IDE Rule Description"
+            },
+            "completionEvents": [
+              "onCommand:SonarLint.ShowIssueDetailsCodeAction"
+            ]
           }
         ]
       }
@@ -777,6 +798,7 @@
   "dependencies": {
     "@openpgp/web-stream-tools": "^0.1.3",
     "@sentry/node": "^8.44.0",
+    "@vscode/codicons": "^0.0.36",
     "@vscode/webview-ui-toolkit": "1.0.0",
     "@xmldom/xmldom": "^0.9.6",
     "compare-versions": "4.1.3",

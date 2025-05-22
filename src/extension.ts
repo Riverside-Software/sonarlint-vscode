@@ -76,6 +76,7 @@ import { SharedConnectedModeSettingsService } from './connected/sharedConnectedM
 import { FileSystemServiceImpl } from './fileSystem/fileSystemServiceImpl';
 import { FixSuggestionService } from './fixSuggestions/fixSuggestionsService';
 import { ContextManager } from './contextManager';
+import { HAS_CLICKED_GET_STARTED_LINK } from './commons';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -190,7 +191,7 @@ export async function activate(context: VSCode.ExtensionContext) {
         productKey: 'vscode-cabl',
         telemetryStorage: Path.resolve(context.extensionPath, '..', 'sonarlint_usage'),
         productName: 'CABL - SonarLint VSCode',
-        productVersion: util.packageJson.version,
+        productVersion: util.extensionVersionWithBuildNumber(),
         workspaceName: VSCode.workspace.name,
         firstSecretDetected: isFirstSecretDetected(context),
         showVerboseLogs: VSCode.workspace.getConfiguration().get('sonarlint-abl.output.showVerboseLogs', false),
@@ -236,7 +237,7 @@ export async function activate(context: VSCode.ExtensionContext) {
     /* ignored */
   });
   FixSuggestionService.init(languageClient);
-  ContextManager.instance.setConnectedModeContext();
+  ContextManager.instance.setConnectedModeContext(context);
 
   installCustomRequestHandlers(context);
 
@@ -310,7 +311,7 @@ export async function activate(context: VSCode.ExtensionContext) {
     }
     if (event.affectsConfiguration('sonarlint-abl.connectedMode')) {
       allConnectionsTreeDataProvider.refresh();
-      ContextManager.instance.setConnectedModeContext();
+      ContextManager.instance.setConnectedModeContext(context);
     }
     if (event.affectsConfiguration('sonarlint-abl.focusOnNewCode')) {
       NewCodeDefinitionService.instance.updateFocusOnNewCodeState();
@@ -474,6 +475,11 @@ function registerCommands(context: VSCode.ExtensionContext) {
   );
   context.subscriptions.push(VSCode.commands.registerCommand(Commands.SHOW_SONARLINT_OUTPUT, () => showLogOutput()));
 
+  context.subscriptions.push(VSCode.commands.registerCommand(Commands.ENABLE_LOGS_AND_SHOW_OUTPUT, () => {
+    enableVerboseLogs();
+    showLogOutput();
+  }));
+
   context.subscriptions.push(VSCode.commands.registerCommand(Commands.INSTALL_MANAGED_JRE, installManagedJre));
 
   context.subscriptions.push(
@@ -568,7 +574,13 @@ function registerCommands(context: VSCode.ExtensionContext) {
       const { command, url } = getHelpAndFeedbackItemById(itemId);
       languageClient.helpAndFeedbackLinkClicked(itemId);
       if (command) {
-        VSCode.commands.executeCommand(helpAndFeedbackItemOrId.command);
+        const args = command.arguments || [];
+        VSCode.commands.executeCommand(command.command, ...args);
+        // if the link clicked was the get started one, we update the global flag to not show it again
+        if (itemId === 'sonarLintWalkthrough') {
+          context.globalState.update(HAS_CLICKED_GET_STARTED_LINK, true);
+          ContextManager.instance.setGetStartedViewContext(context);
+        }
       } else {
         VSCode.commands.executeCommand(Commands.OPEN_BROWSER, VSCode.Uri.parse(url));
       }

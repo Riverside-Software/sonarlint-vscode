@@ -9,15 +9,10 @@ import { writeFileSync } from 'fs';
 import { info } from 'fancy-log';
 import { getPackageJSON } from './fsUtils.mjs';
 
-export default function updateVersion() {
-  info('Starting task "updateVersion');
+export default function populateBuildNumber() {
+  info('Starting task "populateBuildNumber');
   const buildNumber = process.env.BUILD_NUMBER;
   const packageJSON = getPackageJSON();
-  const version = packageJSON.version;
-  if (version.endsWith('-SNAPSHOT') && buildNumber) {
-    packageJSON.version = version.replace('-SNAPSHOT', `+${buildNumber}`);
-    writeFileSync('./package.json', JSON.stringify(packageJSON));
-  } else {
-    info(`Not modifying version ${version} with build number ${buildNumber}`);
-  }
+  packageJSON.buildNumber = buildNumber;
+  writeFileSync('./package.json', JSON.stringify(packageJSON, null, 2));
 };

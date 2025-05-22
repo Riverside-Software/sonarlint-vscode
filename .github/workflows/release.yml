@@ -75,7 +75,7 @@ jobs:
             artifactName = f'sonarlint-vscode-{version}.vsix'
           else:
             artifactName = f'sonarlint-vscode-{platform}-{version}.vsix'
-          artifactUrl = f'{slvscodeBaseUrl}/{version}/{artifactName}'
+          artifactUrl = f'{slvscodeBaseUrl}/{tagName}/{artifactName}'
 
           with open(os.environ['GITHUB_OUTPUT'], 'a') as githubOutput:
             print(f'artifactUrl={artifactUrl}', file=githubOutput)
@@ -94,6 +94,14 @@ jobs:
           TARGET_PLATFORM: ${{ matrix.platform }}
           VSCE_TOKEN: ${{ fromJSON(steps.secrets.outputs.vault).VISUALSTUDIO_PAT }}
         uses: ./.github/actions/vsce-publish
+
+      - name: Attach artifact to GitHub release
+        if: success()
+        id: attach_artifact
+        env:
+          ARTIFACT_FILE: ${{ steps.download_artifact.outputs.artifactFile }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ github.ref_name }} "$ARTIFACT_FILE"
 
   deploy_to_openvsx:
     permissions:
@@ -140,7 +148,7 @@ jobs:
           artifactoryPublicRepo = 'https://repox.jfrog.io/artifactory/sonarsource-public-releases'
           slvscodeBaseUrl = f'{artifactoryPublicRepo}/org/sonarsource/sonarlint/vscode/sonarlint-vscode'
           artifactName = f'sonarlint-vscode-{version}.vsix'
-          artifactUrl = f'{slvscodeBaseUrl}/{version}/{artifactName}'
+          artifactUrl = f'{slvscodeBaseUrl}/{tagName}/{artifactName}'
           
           with open(os.environ['GITHUB_OUTPUT'], 'a') as githubOutput:
             print(f'artifactUrl={artifactUrl}', file=githubOutput)

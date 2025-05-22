@@ -12,7 +12,7 @@ import { isVerboseEnabled } from '../settings/settings';
 let sonarlintOutput: VSCode.OutputChannel;
 
 export function initLogOutput(context: VSCode.ExtensionContext) {
-  sonarlintOutput = VSCode.window.createOutputChannel('CABL');
+  sonarlintOutput = VSCode.window.createOutputChannel('CABL', { log: true });
   context.subscriptions.push(sonarlintOutput);
 }
 
