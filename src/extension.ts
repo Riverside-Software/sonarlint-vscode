@@ -185,7 +185,7 @@ export async function activate(context: VSCode.ExtensionContext) {
       code2Protocol: code2ProtocolConverter,
       protocol2Code: protocol2CodeConverter
     },
-    diagnosticCollectionName: 'sonarlint',
+    diagnosticCollectionName: 'sonarlint-abl',
     initializationOptions: () => {
       return {
         productKey: 'vscode-cabl',
@@ -256,14 +256,14 @@ export async function activate(context: VSCode.ExtensionContext) {
   });
 
   allRulesTreeDataProvider = new AllRulesTreeDataProvider(() => languageClient.listAllRules());
-  allRulesView = VSCode.window.createTreeView('SonarLint-abl.AllRules', {
+  allRulesView = VSCode.window.createTreeView('sonarlint-abl.AllRules', {
     treeDataProvider: allRulesTreeDataProvider
   });
   setRulesViewMessage(allRulesView);
   context.subscriptions.push(allRulesView);
 
   secondaryLocationsTree = new SecondaryLocationsTree();
-  issueLocationsView = VSCode.window.createTreeView('SonarLint-abl.IssueLocations', {
+  issueLocationsView = VSCode.window.createTreeView('sonarlint-abl.IssueLocations', {
     treeDataProvider: secondaryLocationsTree
   });
   context.subscriptions.push(issueLocationsView);
@@ -332,7 +332,7 @@ export async function activate(context: VSCode.ExtensionContext) {
 
   allConnectionsTreeDataProvider = new AllConnectionsTreeDataProvider(languageClient);
 
-  allConnectionsView = VSCode.window.createTreeView('SonarLint.ConnectedMode', {
+  allConnectionsView = VSCode.window.createTreeView('sonarlint-abl.ConnectedMode', {
     treeDataProvider: allConnectionsTreeDataProvider
   });
   context.subscriptions.push(allConnectionsView);
@@ -345,7 +345,7 @@ export async function activate(context: VSCode.ExtensionContext) {
   context.subscriptions.push(allHotspotsView);
 
   helpAndFeedbackTreeDataProvider = new HelpAndFeedbackTreeDataProvider();
-  helpAndFeedbackView = VSCode.window.createTreeView('SonarLint-abl.HelpAndFeedback', {
+  helpAndFeedbackView = VSCode.window.createTreeView('sonarlint-abl.HelpAndFeedback', {
     treeDataProvider: helpAndFeedbackTreeDataProvider
   });
   context.subscriptions.push(helpAndFeedbackView);

@@ -20,9 +20,9 @@ import { Organization } from '../../src/lsp/protocol';
 const TEN_SECONDS = 10_000;
 
 async function deleteConnectedModeSettings() {
-  await vscode.workspace.getConfiguration('sonarlint')
+  await vscode.workspace.getConfiguration('sonarlint-abl')
     .update('connectedMode.connections.sonarqube', undefined, vscode.ConfigurationTarget.Global);
-  await vscode.workspace.getConfiguration('sonarlint')
+  await vscode.workspace.getConfiguration('sonarlint-abl')
     .update('connectedMode.connections.sonarcloud', undefined, vscode.ConfigurationTarget.Global);
 }
 
@@ -283,9 +283,9 @@ suite('Connection Setup', () => {
 });
 
 function getSonarQubeConnections() {
-  return vscode.workspace.getConfiguration('sonarlint').get('connectedMode.connections.sonarqube');
+  return vscode.workspace.getConfiguration('sonarlint-abl').get('connectedMode.connections.sonarqube');
 }
 
 function getSonarCloudConnections() {
-  return vscode.workspace.getConfiguration('sonarlint').get('connectedMode.connections.sonarcloud');
+  return vscode.workspace.getConfiguration('sonarlint-abl').get('connectedMode.connections.sonarcloud');
 }

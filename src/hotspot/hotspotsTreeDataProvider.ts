@@ -123,7 +123,7 @@ export class AllHotspotsTreeDataProvider implements VSCode.TreeDataProvider<Hots
 
   private async updateContextShowMode(showMode: ShowMode) {
     this.showMode = showMode;
-    await VSCode.commands.executeCommand('setContext', 'SonarLint-abl.Hotspots.ShowMode', showMode);
+    await VSCode.commands.executeCommand('setContext', 'sonarlint-abl.Hotspots.ShowMode', showMode);
   }
 
   async refresh(hotspotsPerFile?: PublishDiagnosticsParams) {

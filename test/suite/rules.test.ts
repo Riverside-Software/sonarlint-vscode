@@ -12,7 +12,7 @@ import { allFalse, allTrue } from '../../src/rules/rules';
 
 suite('SonarLint Rules view', () => {
   suiteSetup('reset rules settings', async () => {
-    await vscode.workspace.getConfiguration('sonarlint').update('rules', undefined, vscode.ConfigurationTarget.Global);
+    await vscode.workspace.getConfiguration('sonarlint-abl').update('rules', undefined, vscode.ConfigurationTarget.Global);
   });
 
   test('should show the whole list of rules grouped by language', async function() {
@@ -29,12 +29,12 @@ suite('SonarLint Rules view', () => {
 
     await vscode.commands.executeCommand('SonarLint.DeactivateRule', secretsAwsRuleAsNode);
 
-    const rulesAfterDeactivation = vscode.workspace.getConfiguration('sonarlint').get('rules');
+    const rulesAfterDeactivation = vscode.workspace.getConfiguration('sonarlint-abl').get('rules');
     expect(rulesAfterDeactivation[secretsAwsRuleKey].level).to.equal('off');
 
     await vscode.commands.executeCommand('SonarLint.ActivateRule', secretsAwsRuleAsNode);
 
-    const rulesAfterReactivation = vscode.workspace.getConfiguration('sonarlint').get('rules');
+    const rulesAfterReactivation = vscode.workspace.getConfiguration('sonarlint-abl').get('rules');
     expect(rulesAfterReactivation[secretsAwsRuleKey]).to.be.undefined;
 
   }).timeout(10_000);
@@ -64,6 +64,6 @@ suite('SonarLint Rules view', () => {
   });
 
   suiteTeardown('reset rules settings', async () => {
-    await vscode.workspace.getConfiguration('sonarlint').update('rules', undefined, vscode.ConfigurationTarget.Global);
+    await vscode.workspace.getConfiguration('sonarlint-abl').update('rules', undefined, vscode.ConfigurationTarget.Global);
   });
 });

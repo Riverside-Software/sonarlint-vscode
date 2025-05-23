@@ -37,7 +37,7 @@ export function getCurrentConfiguration() {
 
 export function onConfigurationChange() {
   return vscode.workspace.onDidChangeConfiguration(event => {
-    if (!event.affectsConfiguration('sonarlint')) {
+    if (!event.affectsConfiguration('sonarlint-abl')) {
       return;
     }
     const newConfig = getSonarLintConfiguration();

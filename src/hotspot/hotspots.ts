@@ -46,7 +46,7 @@ import {
   HotspotTreeViewItem
 } from './hotspotsTreeDataProvider';
 
-export const HOTSPOTS_VIEW_ID = 'SonarLint-abl.SecurityHotspots';
+export const HOTSPOTS_VIEW_ID = 'sonarlint-abl.SecurityHotspots';
 
 export const OPEN_HOTSPOT_IN_IDE_SOURCE = 'openInIde';
 
@@ -171,7 +171,7 @@ function formatRemoteHotspotStatus(status: HotspotStatus) {
 export const showHotspotDescription = () => {
   if (!hotspotDescriptionPanel) {
     hotspotDescriptionPanel = vscode.window.createWebviewPanel(
-      'sonarlint.DiagContext',
+      'sonarlint-abl.DiagContext',
       'SonarQube Server Security Hotspot',
       vscode.ViewColumn.Two,
       {
@@ -340,7 +340,7 @@ export function formatDetectedHotspotStatus(statusIndex: number) {
 export function showHotspotDetails(hotspotDetails: ShowRuleDescriptionParams, hotspot: HotspotNode) {
   if (!hotspotDetailsPanel) {
     hotspotDetailsPanel = vscode.window.createWebviewPanel(
-      'sonarlint.DiagContext',
+      'sonarlint-abl.DiagContext',
       'Security Hotspot Details',
       vscode.ViewColumn.Two,
       {

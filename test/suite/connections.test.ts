@@ -39,16 +39,16 @@ suite('Connected Mode Test Suite', () => {
   setup(async () => {
     // start from scratch config
     await vscode.workspace
-      .getConfiguration('sonarlint')
+      .getConfiguration('sonarlint-abl')
       .update(CONNECTED_MODE_SETTINGS_SONARQUBE, undefined, vscode.ConfigurationTarget.Global);
     await vscode.workspace
-      .getConfiguration('sonarlint')
+      .getConfiguration('sonarlint-abl')
       .update(CONNECTED_MODE_SETTINGS_SONARCLOUD, undefined, vscode.ConfigurationTarget.Global);
   });
 
   teardown(async () => {
     await vscode.workspace
-      .getConfiguration('sonarlint')
+      .getConfiguration('sonarlint-abl')
       .update(CONNECTED_MODE_SETTINGS, undefined, vscode.ConfigurationTarget.Global);
     await vscode.workspace
       .getConfiguration('sonarlint-abl', sampleFolderUri)
@@ -97,7 +97,7 @@ suite('Connected Mode Test Suite', () => {
         { serverUrl: 'https://sonarqube.mycompany.com', token: '<generated from SonarQube account/security page>' }
       ];
       await vscode.workspace
-        .getConfiguration('sonarlint')
+        .getConfiguration('sonarlint-abl')
         .update(CONNECTED_MODE_SETTINGS_SONARQUBE, testSQConfig, vscode.ConfigurationTarget.Global);
       await vscode.workspace
         .getConfiguration('sonarlint-abl', sampleFolderUri)
@@ -135,7 +135,7 @@ suite('Connected Mode Test Suite', () => {
         { organizationKey: 'myOrg2', token: 'ddddd' }
       ];
       await vscode.workspace
-        .getConfiguration('sonarlint')
+        .getConfiguration('sonarlint-abl')
         .update(CONNECTED_MODE_SETTINGS_SONARCLOUD, testSCConfig, vscode.ConfigurationTarget.Global);
 
       const underTest = new AllConnectionsTreeDataProvider(mockClient);
@@ -153,7 +153,7 @@ suite('Connected Mode Test Suite', () => {
         { connectionId: 'two', organizationKey: 'myOrg2', token: 'ddddd' }
       ];
       await vscode.workspace
-        .getConfiguration('sonarlint')
+        .getConfiguration('sonarlint-abl')
         .update(CONNECTED_MODE_SETTINGS_SONARCLOUD, testSCConfig, vscode.ConfigurationTarget.Global);
 
       const underTest = new AllConnectionsTreeDataProvider(mockClient);

@@ -18,7 +18,7 @@ const sampleHelmFolderLocation = '../../../samples/sample-helm/';
 suite('Helm Test Suite', () => {
 
   test('should report issues on Helm chart', async function () {
-    const ext = vscode.extensions.getExtension('sonarsource.sonarlint-vscode')!;
+    const ext = vscode.extensions.getExtension('RiversideSoftware.sonarlint-abl')!;
     await ext.activate();
 
     vscode.commands.executeCommand('SonarLint.ShowSonarLintOutput');
