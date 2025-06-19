@@ -160,12 +160,15 @@ export interface GetOpenEdgeConfigResponse {
 
 export interface GetOpenEdgeProjectResponse {
   projectRoot: string;
-  sourceDir: string;
-  buildDir: string;
+  sourceDirs: string;
+  buildDirs: string;
+  xrefDirs: string;
   propath: string;
   rcodeCache: string;
   propathRCodeCache: string;
   schemaCache: string;
+  catalog: string;
+  encoding: string;
 }
 
 export namespace ShowSonarLintOutputNotification {
