@@ -1,8 +1,8 @@
 {
   "name": "sonarlint-abl",
   "displayName": "CABL",
-  "description": "Linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.22.99004",
+  "description": "Advanced linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
+  "version": "4.23.99001",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -18,12 +18,23 @@
     "vscode": "^1.75.0"
   },
   "categories": [
-    "Linters"
+    "Linters",
+    "Education",
+    "Programming Languages",
+    "Notebooks",
+    "AI"
+  ],
+  "tags": [
+    "AI",
+    "Education",
+    "Vulnerability",
+    "Security",
+    "SonarQube",
+    "Static Code Analysis",
+    "Code Quality"
   ],
   "keywords": [
-    "Code Quality",
-    "ABL",
-    "Code Analysis"
+    "ABL"
   ],
   "activationEvents": [
     "workspaceContains:openedge-project.json"

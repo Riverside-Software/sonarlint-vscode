@@ -1,3 +1,14 @@
+## 4.23
+
+* Update Go analyzer 1.22.1 -> [1.23](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20=%2019232%20ORDER%20BY%20created%20ASC) -> [1.23.1](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2019661%20ORDER%20BY%20created%20ASC)
+* Update IaC analyzer 1.46 -> [1.47](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20=%2019100%20ORDER%20BY%20created%20ASC)
+* Update PHP analyzer 3.45 -> [3.46](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2017781%20ORDER%20BY%20created%20ASC)
+* Update CFamily analyzer 6.66 -> [6.67](https://sonarsource.atlassian.net/issues/?jql=project%20=%2010166%20AND%20fixVersion=18836%20ORDER%20BY%20priority%20DESC,%20key%20ASC)
+* Update Java analyzer 8.13 -> [8.14](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2019001%20ORDER%20BY%20created%20ASC)
+* Update JS/TS/CSS analyzer 10.22 -> [10.23](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20=%2018440%20ORDER%20BY%20created%20ASC)
+* Update Text analyzer 2.22 -> [2.23](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2018013%20ORDER%20BY%20created%20ASC) -> [2.24](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2019436%20ORDER%20BY%20created%20ASC)
+* Update C# analyzer 10.9 -> [10.10](https://github.com/SonarSource/sonar-dotnet-enterprise/releases/tag/10.10.0.116381) -> [10.10.1](https://github.com/SonarSource/sonar-dotnet-enterprise/releases/tag/10.10.1.116480)
+
 ## 4.22
 
 * Update Python analyzer 5.3 -> [5.4](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20=%2018803%20ORDER%20BY%20created%20ASC)

@@ -49,11 +49,10 @@ async function suggestMigrationToSecureStorage(
   scConnections: SonarCloudConnection[],
   settingsService: ConnectionSettingsService
 ) {
-  const remindMeLaterAction = 'Ask me later';
   const migrateToSecureStorageAction = 'Migrate';
   const message = `SonarQube for VS Code found SonarQube (Server, Cloud) token in settings file.
    Do you want to migrate them to secure storage?`;
-  const selection = await VSCode.window.showWarningMessage(message, migrateToSecureStorageAction, remindMeLaterAction);
+  const selection = await VSCode.window.showWarningMessage(message, migrateToSecureStorageAction);
   if (selection === migrateToSecureStorageAction) {
     await settingsService.addTokensFromSettingsToSecureStorage(sqConnections, scConnections);
   }
@@ -373,11 +372,25 @@ export function isSonarQubeConnection(connection: BaseConnection): connection is
 }
 
 function getTokenStorageKey(connection: SonarQubeConnection | SonarCloudConnection) {
-  return isSonarQubeConnection(connection) ? connection.serverUrl : connection.organizationKey;
+  const regionPrefix = !isSonarQubeConnection(connection) && connection.region ? `${connection.region}_` : '';
+  return isSonarQubeConnection(connection) ? connection.serverUrl : regionPrefix + connection.organizationKey;
 }
 
 async function updateConfigIfNotEmpty(connections, configCategory) {
   if (connections.length > 0) {
     await VSCode.workspace.getConfiguration().update(configCategory, connections, VSCode.ConfigurationTarget.Global);
+  }
+}
+
+export async function migrateSonarQubeCloudTokens() {
+  for (const sqcConnection of ConnectionSettingsService.instance.getSonarCloudConnections()) {
+    const oldTokenStorageKey = sqcConnection.organizationKey;
+    const existingToken = await ConnectionSettingsService.instance.getServerToken(oldTokenStorageKey);
+    if (existingToken) {
+      // store existing token with the new key (prefixed with region)
+      ConnectionSettingsService.instance.storeServerToken(getTokenStorageKey(sqcConnection), existingToken);
+      // delete old token record
+      ConnectionSettingsService.instance.deleteTokenForServer(oldTokenStorageKey);
+    }
   }
 }
