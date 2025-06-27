@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Advanced linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.24.99001",
+  "version": "4.25.99001",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -24,7 +24,7 @@
     "Notebooks",
     "AI"
   ],
-  "tags": [
+  "keywords": [
     "AI",
     "Education",
     "Vulnerability",
@@ -32,9 +32,7 @@
     "SonarQube",
     "Static Code Analysis",
     "Code Quality",
-    "language-model-tools"
-  ],
-  "keywords": [
+    "language-model-tools",
     "ABL"
   ],
   "activationEvents": [
@@ -792,7 +790,7 @@
     },
     "languageModelTools": [
       {
-        "name": "sonarqube_listPotentialSecurityIssues",
+        "name": "sonarqube_list_potential_security_issues",
         "displayName": "SonarQube: Security Hotspots",
         "toolReferenceName": "sonarqube_getSecurityHotspots",
         "canBeReferencedInPrompt": true,
@@ -814,7 +812,7 @@
         }
       },
       {
-        "name": "sonarqube_excludeFilesOrFoldersFromAnalysis",
+        "name": "sonarqube_exclude_from_analysis",
         "displayName": "SonarQube: Exclude File or Folder from Analysis",
         "toolReferenceName": "sonarqube_excludeFiles",
         "canBeReferencedInPrompt": true,
@@ -837,7 +835,7 @@
         }
       },
       {
-        "name": "sonarqube_setUpConnectedMode",
+        "name": "sonarqube_setup_connected_mode",
         "displayName": "SonarQube: Set up Connected Mode",
         "toolReferenceName": "sonarqube_setUpConnectedMode",
         "canBeReferencedInPrompt": true,
@@ -875,6 +873,23 @@
             }
           }
         }
+      },
+      {
+        "name": "sonarqube_analyze_file",
+        "displayName": "SonarQube: Analyze File",
+        "toolReferenceName": "sonarqube_analyzeFile",
+        "canBeReferencedInPrompt": true,
+        "modelDescription": "This tool opens the requested file and runs SonarQube analysis on it. Detected code quality and security issues will be reported in the Problems view of the IDE. It can be used to analyze any file including those that are not part of a workspace or those that are excluded from the analysis. Do not call this method to analyze Jupyter Notebook.",
+        "icon": "$(play)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filePath": {
+              "type": "string",
+              "description": "The full path to the file that should be analyzed."
+            }
+          }
+        }
       }
     ]
   },
@@ -908,8 +923,8 @@
     "highlight.js": "^11.7.0",
     "inly": "^5.0.1",
     "luxon": "^3.2.1",
+    "openpgp": "^6.1.1",
     "node-html-parser": "^6.1.5",
-    "openpgp": "^6.1.0",
     "path-exists": "4.0.0",
     "properties": "1.2.1",
     "sinon": "^19.0.2",

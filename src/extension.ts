@@ -80,6 +80,7 @@ import { HAS_CLICKED_GET_STARTED_LINK } from './commons';
 import { ListPotentialSecurityIssuesTool } from './languageModelTools/listPotentialSecurityIssuesTool';
 import { ExcludeFileOrFolderTool } from './languageModelTools/excludeFileOrFolderTool';
 import { SetUpConnectedModeTool } from './languageModelTools/setUpConnectedModeTool';
+import { AnalyzeFileTool } from './languageModelTools/analyzeFileTool';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -640,6 +641,7 @@ function initializeLanguageModelTools(context: VSCode.ExtensionContext) {
     context.subscriptions.push(VSCode.lm.registerTool(ListPotentialSecurityIssuesTool.toolName, new ListPotentialSecurityIssuesTool(languageClient)));
     context.subscriptions.push(VSCode.lm.registerTool(ExcludeFileOrFolderTool.toolName, new ExcludeFileOrFolderTool(languageClient)));
     context.subscriptions.push(VSCode.lm.registerTool(SetUpConnectedModeTool.toolName, new SetUpConnectedModeTool(context, languageClient)));
+    context.subscriptions.push(VSCode.lm.registerTool(AnalyzeFileTool.toolName, new AnalyzeFileTool(languageClient)));
   } else {
     logToSonarLintOutput('Language model tools are not available in this version of VSCode. Initializing extension without them.');
   }
@@ -753,6 +755,7 @@ function updateSonarLintViewContainerBadge() {
 }
 
 async function getTokenForServer(serverId: string): Promise<string> {
+  // serverId is either a server URL or a organizationKey prefixed with region (EU_ or US_)
   return ConnectionSettingsService.instance.getServerToken(serverId);
 }
 
