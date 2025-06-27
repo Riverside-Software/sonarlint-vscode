@@ -77,6 +77,9 @@ import { FileSystemServiceImpl } from './fileSystem/fileSystemServiceImpl';
 import { FixSuggestionService } from './fixSuggestions/fixSuggestionsService';
 import { ContextManager } from './contextManager';
 import { HAS_CLICKED_GET_STARTED_LINK } from './commons';
+import { ListPotentialSecurityIssuesTool } from './languageModelTools/listPotentialSecurityIssuesTool';
+import { ExcludeFileOrFolderTool } from './languageModelTools/excludeFileOrFolderTool';
+import { SetUpConnectedModeTool } from './languageModelTools/setUpConnectedModeTool';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -242,6 +245,7 @@ export async function activate(context: VSCode.ExtensionContext) {
   ContextManager.instance.setConnectedModeContext(context);
 
   installCustomRequestHandlers(context);
+  initializeLanguageModelTools(context);
 
   const referenceBranchStatusItem = VSCode.window.createStatusBarItem(VSCode.StatusBarAlignment.Left, 1);
   const scm = await initScm(languageClient, referenceBranchStatusItem);
@@ -339,7 +343,8 @@ export async function activate(context: VSCode.ExtensionContext) {
   });
   context.subscriptions.push(allConnectionsView);
 
-  hotspotsTreeDataProvider = new AllHotspotsTreeDataProvider(ConnectionSettingsService.instance);
+  AllHotspotsTreeDataProvider.init(ConnectionSettingsService.instance);
+  hotspotsTreeDataProvider = AllHotspotsTreeDataProvider.instance;
   allHotspotsView = VSCode.window.createTreeView(HOTSPOTS_VIEW_ID, {
     treeDataProvider: hotspotsTreeDataProvider
   });
@@ -630,6 +635,16 @@ async function scanFolderForHotspotsCommandHandler(folderUri: VSCode.Uri) {
   );
 }
 
+function initializeLanguageModelTools(context: VSCode.ExtensionContext) {
+  if (VSCode.lm) {
+    context.subscriptions.push(VSCode.lm.registerTool(ListPotentialSecurityIssuesTool.toolName, new ListPotentialSecurityIssuesTool(languageClient)));
+    context.subscriptions.push(VSCode.lm.registerTool(ExcludeFileOrFolderTool.toolName, new ExcludeFileOrFolderTool(languageClient)));
+    context.subscriptions.push(VSCode.lm.registerTool(SetUpConnectedModeTool.toolName, new SetUpConnectedModeTool(context, languageClient)));
+  } else {
+    logToSonarLintOutput('Language model tools are not available in this version of VSCode. Initializing extension without them.');
+  }
+}
+
 function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
   languageClient.onNotification(protocol.ShowFixSuggestion.type, params => FixSuggestionService.instance.showFixSuggestion(params))
   languageClient.onNotification(protocol.ShowRuleDescriptionNotification.type, showRuleDescription(context));
@@ -651,6 +666,9 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
   languageClient.onRequest(protocol.CanShowMissingRequirementNotification.type, () => {
     return context.globalState.get(CAN_SHOW_MISSING_REQUIREMENT_NOTIF, true);
   });
+  languageClient.onNotification(protocol.DoNotShowMissingRequirementsMessageAgain.type, () => {
+    context.globalState.update(CAN_SHOW_MISSING_REQUIREMENT_NOTIF, false);
+  })
   languageClient.onNotification(protocol.MaybeShowWiderLanguageSupportNotification.type, (language) => maybeShowWiderLanguageSupportNotification(context, language));
   languageClient.onNotification(protocol.RemoveBindingsForDeletedConnections.type, async (connectionIds) => {
     await BindingService.instance.removeBindingsForRemovedConnections(connectionIds);

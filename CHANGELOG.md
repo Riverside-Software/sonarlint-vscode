@@ -1,3 +1,14 @@
+## 4.24
+
+* Contribute Language Model Tools for Copilot Agent. Currently available tools are:
+  * Help setting up Connected Mode
+  * Exclude given file or folder from local analysis
+  * List Security Hotspots detected in the file
+  * Analyze a given file
+* Update Go analyzer 1.23 -> [1.24](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2019628%20ORDER%20BY%20created%20ASC)
+* Update Java analyzer 8.14 -> [8.15](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2019233%20ORDER%20BY%20created%20ASC)
+* Update JS/TS/CSS analyzer 10.23 -> [10.24](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2020222%20ORDER%20BY%20created%20ASC)
+
 ## 4.23
 
 * Update Go analyzer 1.22.1 -> [1.23](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20=%2019232%20ORDER%20BY%20created%20ASC) -> [1.23.1](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2019661%20ORDER%20BY%20created%20ASC)
