@@ -71,6 +71,7 @@ import { maybeShowWiderLanguageSupportNotification } from './promotions/promotio
 import { SharedConnectedModeSettingsService } from './connected/sharedConnectedModeSettingsService';
 import { FileSystemServiceImpl } from './fileSystem/fileSystemServiceImpl';
 import { FixSuggestionService } from './fixSuggestions/fixSuggestionsService';
+import { AnalysisFailureHandler } from './diagnostics/analysisFailureHandler';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -180,6 +181,27 @@ export async function activate(context: VSCode.ExtensionContext) {
       protocol2Code: protocol2CodeConverter
     },
     diagnosticCollectionName: 'sonarlint',
+    middleware: {
+      // Add middleware to detect empty diagnostics or analysis failures
+      handleDiagnostics: (uri, diagnostics, next) => {
+        // Call the default handler first
+        next(uri, diagnostics);
+        
+        // Check if we have an active analysis for this file
+        const fileUri = VSCode.Uri.parse(uri);
+        
+        // If diagnostics are empty, it might indicate an analysis failure
+        // We'll report it only for ABL files to avoid false positives
+        const document = VSCode.workspace.textDocuments.find(doc => doc.uri.toString() === uri);
+        if (document && document.languageId === 'abl' && diagnostics.length === 0) {
+          logToSonarLintOutput(`Empty diagnostics detected for ${uri}, might indicate analysis failure`);
+          AnalysisFailureHandler.instance.reportAnalysisFailure(fileUri);
+        } else {
+          // If we have diagnostics, clear any previous analysis failure
+          AnalysisFailureHandler.instance.clearAnalysisFailure(fileUri);
+        }
+      }
+    },
     initializationOptions: () => {
       return {
         productKey: 'vscode-cabl',
@@ -231,6 +253,7 @@ export async function activate(context: VSCode.ExtensionContext) {
     /* ignored */
   });
   FixSuggestionService.init(languageClient);
+  AnalysisFailureHandler.init(context);
 
   installCustomRequestHandlers(context);
 
@@ -648,6 +671,22 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
     NewCodeDefinitionService.instance.updateNewCodeDefinitionForFolderUri(newCodeDefinitionForFolderUri);
   });
   languageClient.onNotification(protocol.SuggestConnection.type, (params) => SharedConnectedModeSettingsService.instance.handleSuggestConnectionNotification(params.suggestionsByConfigScopeId));
+  
+  // Handle analysis requests to track potential failures
+  languageClient.onNotification(protocol.AnalyseOpenFileIgnoringExcludes.type, params => {
+    // Track the analysis request to detect failures
+    if (params.textDocument) {
+      const fileUri = VSCode.Uri.parse(params.textDocument.uri);
+      // Start tracking this analysis request
+      AnalysisFailureHandler.instance.trackAnalysisRequest(fileUri);
+    } else if (params.notebookDocument && params.notebookCells) {
+      // For notebook documents, track each cell
+      params.notebookCells.forEach(cell => {
+        const cellUri = VSCode.Uri.parse(cell.uri);
+        AnalysisFailureHandler.instance.trackAnalysisRequest(cellUri);
+      });
+    }
+  });
   languageClient.onRequest(protocol.IsOpenInEditor.type, fileUri => {
     return VSCode.workspace.textDocuments.some(doc => code2ProtocolConverter(doc.uri) === fileUri);
   });
