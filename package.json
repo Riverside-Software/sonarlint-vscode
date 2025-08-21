@@ -498,7 +498,7 @@
         {
           "id": "sonarlint-abl.IssueLocations",
           "name": "SonarQube Issue Locations",
-          "when": "sonarqube.hasExploredIssueLocations"
+          "when": "sonarlint-abl.hasExploredIssueLocations"
         }
       ],
       "sonarlint-abl": [
@@ -506,7 +506,7 @@
           "type": "tree",
           "id": "SonarQube-abl.GetStarted",
           "name": "Get Started",
-          "when": "sonarqube.shouldShowGetStartedView"
+          "when": "sonarlint-abl.shouldShowGetStartedView"
         },
         {
           "id": "sonarlint-abl.ConnectedMode",
@@ -516,13 +516,13 @@
           "id": "sonarlint-abl.SecurityHotspots",
           "name": "Security Hotspots",
           "visibility": "collapsed",
-          "when": "sonarqube.someFoldersUseConnectedMode"
+          "when": "sonarlint-abl.someFoldersUseConnectedMode"
         },
         {
           "id": "sonarlint-abl.AllRules",
           "name": "Rules",
           "visibility": "collapsed",
-          "when": "sonarqube.someFoldersUseStandaloneMode"
+          "when": "sonarlint-abl.someFoldersUseStandaloneMode"
         },
         {
           "id": "sonarlint-abl.HelpAndFeedback",
