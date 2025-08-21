@@ -316,22 +316,22 @@
       {
         "command": "SonarLint.ABL.ShowSonarLintOutput",
         "title": "Show CABL Output",
-        "category": "ABL SonarQube"
+        "category": "CABL"
       },
       {
         "command": "SonarLint.ABL.ReopenLocalIssues",
         "title": "Reopen Local Issues for current file",
-        "category": "ABL SonarQube"
+        "category": "CABL"
       },
       {
         "command": "SonarLint.ABL.AnalyseOpenFile",
         "title": "Analyse current file ignoring excludes",
-        "category": "ABL SonarQube"
+        "category": "CABL"
       },
       {
         "command": "SonarLint.AutoBindWorkspaceFolders",
         "title": "Bind all workspace folders to SonarQube Server",
-        "category": "ABL SonarQube"
+        "category": "CABL"
       },
       {
         "command": "SonarLint.ABL.DeactivateRule",
@@ -393,83 +393,83 @@
       {
         "command": "SonarLint.ABL.ConnectToSonarQube",
         "title": "Connect to SonarQube Server",
-        "category": "ABL SonarQube",
+        "category": "CABL",
         "icon": "$(plus)"
       },
       {
         "command": "SonarLint.ABL.EditSonarQubeConnection",
         "title": "Edit SonarQube Server Connection",
-        "category": "ABL SonarQube",
+        "category": "CABL",
         "icon": "$(pencil)",
         "enablement": "view == sonarlint-abl.ConnectedMode"
       },
       {
         "command": "SonarLint.ABL.AddProjectBinding",
         "title": "Add Project Binding",
-        "category": "ABL SonarQube",
+        "category": "CABL",
         "icon": "$(plus)",
         "enablement": "view == sonarlint-abl.ConnectedMode"
       },
       {
         "command": "SonarLint.ABL.RemoveConnection",
         "title": "Remove Connection",
-        "category": "ABL SonarQube",
+        "category": "CABL",
         "icon": "$(trash)",
         "enablement": "view == sonarlint-abl.ConnectedMode"
       },
       {
         "command": "SonarLint.ABL.EditProjectBinding",
         "title": "Edit Project Binding",
-        "category": "ABL SonarQube",
+        "category": "CABL",
         "icon": "$(pencil)",
         "enablement": "view == sonarlint-abl.ConnectedMode"
       },
       {
         "command": "SonarLint.ABL.RemoveProjectBinding",
         "title": "Remove Project Binding",
-        "category": "ABL SonarQube",
+        "category": "CABL",
         "icon": "$(trash)",
         "enablement": "view == sonarlint-abl.ConnectedMode"
       },
       {
         "command": "SonarLint.ABL.OpenHotspotOnServer",
         "title": "Review on Server",
-        "category": "ABL SonarQube",
+        "category": "CABL",
         "enablement": "view == sonarlint-abl.SecurityHotspots && viewItem == knownHotspotItem"
       },
       {
         "command": "SonarLint.ABL.ShowHotspotRuleDescription",
         "title": "Show Rule Description",
-        "category": "ABL SonarQube",
+        "category": "CABL",
         "enablement": "view == sonarlint-abl.SecurityHotspots && viewItem == newHotspotItem"
       },
       {
         "command": "SonarLint.ABL.ShowHotspotDetails",
         "title": "Show Hotspot Details",
-        "category": "ABL SonarQube",
+        "category": "CABL",
         "enablement": "view == sonarlint-abl.SecurityHotspots && (viewItem == knownHotspotItem || viewItem == remoteHotspotItem)"
       },
       {
         "command": "SonarLint.ABL.HideHotspot",
         "title": "Hide Security Hotspot",
-        "category": "ABL SonarQube",
+        "category": "CABL",
         "enablement": "view == sonarlint-abl.SecurityHotspots && viewItem == remoteHotspotItem"
       },
       {
         "command": "SonarLint.ABL.ChangeHotspotStatus",
         "title": "Change Status",
-        "category": "ABL SonarQube",
+        "category": "CABL",
         "enablement": "view == sonarlint-abl.SecurityHotspots && viewItem == knownHotspotItem"
       },
       {
         "command": "SonarLint.ABL.HelpAndFeedbackLinkClicked",
         "title": "Share feedback",
-        "category": "ABL SonarQube"
+        "category": "CABL"
       },
       {
         "command": "SonarLint.ABL.EnableVerboseLogs",
         "title": "Enable Verbose Logging",
-        "category": "ABL SonarQube"
+        "category": "CABL"
       },
       {
         "command": "SonarLint.ABL.EnableLogsAndShowOutput",
@@ -479,7 +479,7 @@
       {
         "command": "SonarLint.ABL.ShareConnectedModeConfiguration",
         "title": "Share Connected Mode Configuration",
-        "category": "ABL SonarQube",
+        "category": "CABL",
         "icon": "$(export)",
         "enablement": "view == sonarlint-abl.ConnectedMode"
       }
@@ -727,7 +727,7 @@
         {
           "command": "SonarLint.ABL.HideHotspot",
           "title": "Hide Security Hotspot",
-          "category": "ABL SonarQube",
+          "category": "CABL",
           "when": "view == sonarlint-abl.SecurityHotspots && viewItem == remoteHotspotItem"
         }
       ]
