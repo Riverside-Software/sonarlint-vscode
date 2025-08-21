@@ -53,7 +53,7 @@ export class ContextManager {
     const hasConnectionConfigured = ConnectionSettingsService.instance.hasConnectionConfigured();
     const hasClickedGetStartedLink = context.globalState.get(HAS_CLICKED_GET_STARTED_LINK, false);
     // only show the get started view if user has no connection AND has not clicked the link
-    vscode.commands.executeCommand('setContext', SHOULD_SHOW_GET_STARTED_VIEW, !hasConnectionConfigured && !hasClickedGetStartedLink);
+    vscode.commands.executeCommand('setContext', SHOULD_SHOW_GET_STARTED_VIEW, false /* !hasConnectionConfigured && !hasClickedGetStartedLink */ );
   }
 
   resetAllContexts() {

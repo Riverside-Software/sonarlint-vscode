@@ -545,64 +545,7 @@
       },
       {
         "view": "SonarQube-abl.GetStarted",
-        "contents": "Automatically find and fix code quality and security issues as you write, using powerful linting tools built right into your code editor.\n\n[Get Started with SonarQube for IDE](command:SonarLint.HelpAndFeedbackLinkClicked?%22sonarLintWalkthrough%22) $(arrow-right)"
-      }
-    ],
-    "walkthroughs": [
-      {
-        "id": "SonarLint.walkthrough",
-        "title": "Welcome to SonarQube for IDE!",
-        "description": "Start left and discover issues early.\nSonarQube for IDE empowers you to find & fix code issues in real time, in 15+ languages.",
-        "steps": [
-          {
-            "id": "SonarQube.getStarted",
-            "title": "$(rocket) New to SonarQube?",
-            "description": "Unlock more languages and security rules.\n[Create Free Account](command:SonarLint.HelpAndFeedbackLinkClicked?%22sonarqubeCloudFreeSignUp%22)",
-            "media": {
-              "image": "walkthrough/abstractServerProduct.svg",
-              "altText": "SonarQube Cloud illustration"
-            },
-            "completionEvents": [
-              "onLink:https://www.sonarsource.com/products/sonarcloud/signup-free/"
-            ]
-          },
-          {
-            "id": "SonarLint.connectedModeIntro",
-            "title": "$(shield) Taint Vulnerabilities and More",
-            "description": "Enable advanced analysis (including [Taint Vulnerabilities](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/taint-vulnerabilities/) and wider language support) by connecting to SonarQube (Server, Cloud). Also, benefit from the [AI CodeFix](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/ai-capabilities/ai-codefix/) within your IDE.\n[Set up Connection](command:SonarLint.ABL.ConnectedMode.focus)\n",
-            "media": {
-              "image": "walkthrough/taintVulnerabilities.svg",
-              "altText": "SonarQube for IDE Taint Vulnerabilities"
-            },
-            "completionEvents": [
-              "onView:sonarlint-abl.ConnectedMode"
-            ]
-          },
-          {
-            "id": "SonarLint.reachOut",
-            "title": "$(comment-discussion) Share feedback or ask for help",
-            "description": "You'd like to learn more about SonarQube for IDE, or give us feedback? Check out the [Help and Feedback view](command:SonarLint.HelpAndFeedback.focus).\n",
-            "media": {
-              "image": "walkthrough/community.svg",
-              "altText": "Sonar Community"
-            },
-            "completionEvents": [
-              "onView:SonarLint.HelpAndFeedback"
-            ]
-          },
-          {
-            "id": "SonarLint.resolveIssues",
-            "title": "$(bug) Enough theory, let's fix some code!",
-            "description": "Open our sample file and get started instantly:\n[Open Sample File](command:SonarLint.OpenSample)\nCheck the [Problems view](command:workbench.panel.markers.view.focus): SonarQube has found something $(warning).\nRight-click on the issue.\nShow issue details: SonarQube explains why this is an issue.\nFor certain rules and issues, SonarQube for IDE will suggest available Quick Fixes.",
-            "media": {
-              "image": "walkthrough/issueDetected.svg",
-              "altText": "SonarQube for IDE Rule Description"
-            },
-            "completionEvents": [
-              "onCommand:SonarLint.ShowIssueDetailsCodeAction"
-            ]
-          }
-        ]
+        "contents": "Automatically find and fix code quality and security issues as you write, using powerful linting tools built right into your code editor."
       }
     ],
     "menus": {
