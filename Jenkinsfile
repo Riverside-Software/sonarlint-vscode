@@ -19,8 +19,8 @@ pipeline {
     stage('Dependencies') {
       steps {
         script {
-          def cablVersion = "3.1.0"
-          def prgsRulesVersion = "3.1.0"
+          def cablVersion = "3.3.1"
+          def prgsRulesVersion = "3.3.3"
           def slintlsVersion = "3.25.99003"
           withEnv(["MVN_HOME=${tool name: 'Maven 3', type: 'hudson.tasks.Maven$MavenInstallation'}", "JAVA_HOME=${tool name: 'JDK17', type: 'jdk'}"]) {
             sh "mkdir analyzers server resources"
