@@ -23,7 +23,8 @@ import {
   connectToSonarCloud,
   connectToSonarQube,
   editSonarCloudConnection,
-  editSonarQubeConnection
+  editSonarQubeConnection,
+  handleInvalidTokenNotification
 } from './connected/connectionsetup';
 import {
   HelpAndFeedbackLink,
@@ -37,7 +38,7 @@ import {
   showSecurityHotspot,
   useProvidedFolderOrPickManuallyAndScan
 } from './hotspot/hotspots';
-import { FindingNode, FindingsTreeDataProvider, FindingsTreeViewItem } from './findings/findingsTreeDataProvider';
+import { FindingsTreeDataProvider, FindingsTreeViewItem } from './findings/findingsTreeDataProvider';
 import { FilterType, getFilterDisplayName } from './findings/findingsTreeDataProviderUtil';
 import { getJavaConfig, installClasspathListener } from './java/java';
 import { getOpenEdgeConfig } from './openedge/openedge';
@@ -80,6 +81,7 @@ import { SetUpConnectedModeTool } from './languageModelTools/setUpConnectedModeT
 import { AnalyzeFileTool } from './languageModelTools/analyzeFileTool';
 import { TaintVulnerabilityDecorator } from './issue/taintVulnerabilityDecorator';
 import { helpAndFeedbackLinkClicked } from './help/linkTelemetry';
+import { FindingNode } from './findings/findingTypes/findingNode';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -540,8 +542,8 @@ function registerCommands(context: VSCode.ExtensionContext) {
   context.subscriptions.push(
     VSCode.commands.registerCommand(
       Commands.RESOLVE_ISSUE,
-      (workspaceUri: string, issueKey: string, fileUri: string, isTaintIssue: boolean) =>
-        resolveIssueMultiStepInput(workspaceUri, issueKey, fileUri, isTaintIssue)
+      (workspaceUri: string, issueKey: string, fileUri: string, isTaintIssue: boolean, isDependencyRisk = false) =>
+        resolveIssueMultiStepInput(workspaceUri, issueKey, fileUri, isTaintIssue, isDependencyRisk)
     )
   );
   context.subscriptions.push(
@@ -688,6 +690,13 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
   languageClient.onNotification(protocol.PublishTaintVulnerabilitiesForFile.type, async taintVulnerabilitiesPerFile => {
     findingsTreeDataProvider.updateTaintVulnerabilities(taintVulnerabilitiesPerFile.uri, taintVulnerabilitiesPerFile.diagnostics);
     TaintVulnerabilityDecorator.instance.updateTaintVulnerabilityDecorationsForFile(VSCode.Uri.parse(taintVulnerabilitiesPerFile.uri));
+  });
+  languageClient.onNotification(protocol.NotifyInvalidToken.type, async params => {
+    await handleInvalidTokenNotification(params.connectionId);
+  });
+
+  languageClient.onNotification(protocol.PublishDependencyRisksForFolder.type, async dependencyRisksPerFolder => {
+    findingsTreeDataProvider.updateDependencyRisks(dependencyRisksPerFolder);
   });
 
   languageClient.onRequest(

@@ -86,4 +86,5 @@ export namespace Commands {
   export const SHOW_OPEN_FILES_ONLY = 'SonarQube.ABL.ShowOpenFilesOnly';
   export const SHOW_HIGH_SEVERITY_ONLY = 'SonarQube.ABL.ShowHighSeverityOnly';
   export const SHOW_CURRENT_FILE_ONLY = 'SonarQube.ABL.ShowCurrentFileOnly';
+  export const CHANGE_DEPENDENCY_RISK_STATUS = 'SonarLint.ABL.ChangeDependencyRiskStatus';
 }

@@ -10,10 +10,13 @@ import { expect } from 'chai';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 import { Diagnostic } from 'vscode-languageserver-types';
-import { FindingsTreeDataProvider, FindingNode, FindingsFileNode } from '../../../src/findings/findingsTreeDataProvider';
+import { FindingsTreeDataProvider } from '../../../src/findings/findingsTreeDataProvider';
 import { FindingType, FindingSource } from '../../../src/findings/findingsTreeDataProviderUtil';
 import { ImpactSeverity, PublishDiagnosticsParams } from '../../../src/lsp/protocol';
 import { SonarLintExtendedLanguageClient } from '../../../src/lsp/client';
+import { NotebookFindingNode } from '../../../src/findings/findingTypes/notebookFindingNode';
+import { NotebookNode } from '../../../src/findings/notebookNode';
+import { FindingNode } from '../../../src/findings/findingTypes/findingNode';
 
 const TEST_FILE_URI = 'file:///test/file.js';
 const TEST_NOTEBOOK_CELL_URI = 'vscode-notebook-cell://test/notebook.ipynb#1234';
@@ -235,7 +238,7 @@ suite('Findings Tree Data Provider Update Methods Test Suite', () => {
   });
 
   suite('updateIssues', () => {
-    test('should update issues for a file', () => {
+    test('should update issues for a file', async () => {
       const diagnostics: vscode.Diagnostic[] = [
         createMockVscodeDiagnostic({
           source: FindingSource.SonarQube,
@@ -250,10 +253,41 @@ suite('Findings Tree Data Provider Update Methods Test Suite', () => {
       expect(refreshSpy.calledOnce).to.be.true;
       
       // Verify that findings were added to cache
-      const findings = (underTest as any).getFindingsForFile(TEST_FILE_URI);
+      const findings = await (underTest as any).getFindingsForFile(TEST_FILE_URI);
       expect(findings).to.have.length(1);
       expect(findings[0].findingType).to.equal(FindingType.Issue);
       expect(findings[0].key).to.equal(TEST_KEY);
+    });
+
+    test('should handle files outside workspace folders without crashing', () => {
+      const outsideWorkspaceUri = 'file:///outside/workspace/file.js';
+      const diagnostics: vscode.Diagnostic[] = [
+        createMockVscodeDiagnostic({
+          source: FindingSource.SonarQube,
+          key: TEST_KEY,
+          message: TEST_MESSAGE
+        })
+      ];
+
+      // Mock workspace folder lookup to return undefined (file outside workspace)
+      const getWorkspaceFolderStub = sinon.stub(vscode.workspace, 'getWorkspaceFolder');
+      getWorkspaceFolderStub.returns(undefined);
+
+      // This should not throw an error
+      expect(() => {
+        underTest.updateIssues(outsideWorkspaceUri, diagnostics);
+      }).to.not.throw();
+
+      // Verify that refresh was called
+      expect(refreshSpy.calledOnce).to.be.true;
+      
+      // Verify that findings were still added to cache
+      const findings = (underTest as any).getFindingsForFile(outsideWorkspaceUri);
+      expect(findings).to.have.length(1);
+      expect(findings[0].findingType).to.equal(FindingType.Issue);
+      expect(findings[0].key).to.equal(TEST_KEY);
+
+      getWorkspaceFolderStub.restore();
     });
 
     test('should replace existing issues when updating', () => {
@@ -302,7 +336,7 @@ suite('Findings Tree Data Provider Update Methods Test Suite', () => {
       expect(issues[0].key).to.equal('new-issue');
     });
 
-    test('should handle notebook issues correctly', () => {
+    test('should handle notebook issues correctly', async () => {
       const diagnostics: vscode.Diagnostic[] = [
         createMockVscodeDiagnostic({
           source: FindingSource.SonarQube,
@@ -313,7 +347,7 @@ suite('Findings Tree Data Provider Update Methods Test Suite', () => {
       ];
       const mockWorkspaceFolder = { uri: vscode.Uri.parse(TEST_WORKSPACE_FOLDER_URI) };
       sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(mockWorkspaceFolder);
-      const fileNode = new FindingsFileNode(TEST_NOTEBOOK_FILE_URI, 1, undefined, true, [TEST_NOTEBOOK_CELL_URI]);
+      const fileNode = new NotebookNode(TEST_NOTEBOOK_FILE_URI, 1, undefined, [TEST_NOTEBOOK_CELL_URI]);
 
       underTest.updateIssues(TEST_NOTEBOOK_CELL_URI, diagnostics);
 
@@ -321,11 +355,11 @@ suite('Findings Tree Data Provider Update Methods Test Suite', () => {
       expect(refreshSpy.calledOnce).to.be.true;
       
       // Verify that findings were added to cache
-      const findings = underTest.getChildren(fileNode);
+      const findings = (await underTest.getChildren(fileNode)) as FindingNode[];
       expect(findings).to.have.length(1);
       expect(findings[0].findingType).to.equal(FindingType.Issue);
       expect(findings[0].key).to.equal(TEST_KEY);
-      expect(findings[0].isNotebookFinding).to.be.true;
+      expect(findings[0] instanceof NotebookFindingNode).to.be.true;
     });
   });
 });
@@ -406,11 +440,13 @@ function createMockFindingNode(options: {
     }
   } as Diagnostic;
 
-  const findingNode = new FindingNode(
+  const findingNode = options.isNotebookFinding ? new NotebookFindingNode(
+    options.fileUri || TEST_FILE_URI,
+    mockDiagnostic
+  ) : new FindingNode(
     options.fileUri || TEST_FILE_URI,
     options.findingType,
-    mockDiagnostic,
-    options.isNotebookFinding || false
+    mockDiagnostic
   );
 
   // Override the contextValue to test different scenarios

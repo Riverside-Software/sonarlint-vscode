@@ -35,14 +35,14 @@ const SAVE_CONNECTION_COMMAND = 'saveConnection';
 const ORGANIZATION_LIST_RECEIVED_COMMAND = 'organizationListReceived';
 
 const SONARQUBE_DESCRIPTION =
-  `An <b>open-source, self-managed</b> tool that easily integrates into the developers' CI/CD pipeline<br>
-  and DevOps platform to systematically help developers and organizations deliver Clean Code.
+  `A <b>self-managed</b> tool that easily integrates into the developers' CI/CD pipeline<br>
+  and DevOps platform to systematically help you deliver high-quality, secure code.
   <br><br>
   Discover which offer is better for your team <a id="sonarQubeEditionsDownloads" href="#">here</a>.`;
 
 const SONARCLOUD_DESCRIPTION =
   `A <b>Software-as-a-Service (SaaS)</b> tool that easily integrates into the cloud DevOps platforms<br>
-  and extends the CI/CD workflow to systematically help developers and organizations deliver Clean Code.
+  and extends the CI/CD workflow to systematically help you deliver high-quality, secure code.
   <br><br>
   Explore SonarQube Cloud with our <a id="sonarqubeCloudFreeSignUp" href="#">free tier</a>.`;
 
@@ -139,6 +139,28 @@ export async function reportConnectionCheckResult(result: ConnectionCheckResult)
     if (reply === editConnectionAction) {
       vscode.commands.executeCommand(Commands.EDIT_SONARQUBE_CONNECTION, result.connectionId);
     }
+  }
+}
+
+export async function handleInvalidTokenNotification(connectionId: string) {
+  const isSonarQube = ConnectionSettingsService.instance.getSonarQubeConnections()?.findIndex(c => c.connectionId === connectionId) !== -1;
+  const isSonarCloud = ConnectionSettingsService.instance.getSonarCloudConnections()?.findIndex(c => c.connectionId === connectionId) !== -1;
+  if (!isSonarCloud && !isSonarQube) {
+    return;
+  }
+
+  const editConnectionAction = 'Edit Connection';
+  const reply = await vscode.window.showErrorMessage(
+    `Connection to '${connectionId}' failed: Please verify your token.`,
+    editConnectionAction
+  );
+  if (reply === editConnectionAction) {
+    if (isSonarQube) {
+      vscode.commands.executeCommand(Commands.EDIT_SONARQUBE_CONNECTION, connectionId);
+    } else if (isSonarCloud) {
+      vscode.commands.executeCommand(Commands.EDIT_SONARCLOUD_CONNECTION, connectionId);
+    }
+    vscode.commands.executeCommand('SonarLint.ConnectedMode.focus');
   }
 }
 

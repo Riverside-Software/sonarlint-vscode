@@ -503,6 +503,10 @@ export namespace PublishTaintVulnerabilitiesForFile {
   export const type = new lsp.NotificationType<PublishDiagnosticsParams>('sonarlint/publishTaintVulnerabilities');
 }
 
+export namespace PublishDependencyRisksForFolder {
+  export const type = new lsp.NotificationType<PublishDiagnosticsParams>('sonarlint/publishDependencyRisks');
+}
+
 export interface ShowHotspotLocationsParams {
   hotspotKey: string;
   fileUri: string;
@@ -519,6 +523,19 @@ export interface OpenHotspotParams {
 
 export namespace OpenHotspotOnServer {
   export const type = new lsp.NotificationType<OpenHotspotParams>('sonarlint/openHotspotInBrowser');
+}
+
+export interface OpenDependencyRiskParams {
+  folderUri: string;
+  issueId: string;
+}
+
+export namespace OpenDependencyRiskInBrowser {
+  export const type = new lsp.NotificationType<OpenDependencyRiskParams>('sonarlint/openDependencyRiskInBrowser');
+}
+
+export namespace DependencyRiskInvestigatedLocally {
+  export const type = new lsp.NotificationType('sonarlint/dependencyRiskInvestigatedLocally');
 }
 
 export interface HelpAndFeedbackLinkClickedNotificationParams {
@@ -648,6 +665,31 @@ export interface SetIssueStatusParams {
   fileUri: string;
   comment: string;
   isTaintIssue: boolean;
+}
+
+export interface GetDependencyRiskTransitionsResponse {
+  transitions: string[];
+}
+
+export interface ChangeDependencyRiskStatusParams {
+  configurationScopeId: string;
+  dependencyRiskKey: string;
+  transition: string;
+  comment: string;
+}
+
+export interface GetDependencyRiskTransitionsParams {
+  dependencyRiskId: string;
+}
+
+export namespace GetDependencyRiskTransitions {
+  export const type = new lsp.RequestType<GetDependencyRiskTransitionsParams, GetDependencyRiskTransitionsResponse, null>(
+    'sonarlint/getDependencyRiskTransitions'
+  );
+}
+
+export namespace ChangeDependencyRiskStatus {
+  export const type = new lsp.NotificationType<ChangeDependencyRiskStatusParams>('sonarlint/changeDependencyRiskStatus');
 }
 
 export interface AssistCreatingConnectionParams {
@@ -854,6 +896,14 @@ export namespace FindingsFilteredNotification {
 
 export interface FindingsFilteredParams {
   filterType: string;
+}
+
+export interface NotifyInvalidTokenParams {
+  connectionId: string;
+}
+
+export namespace NotifyInvalidToken {
+  export const type = new lsp.NotificationType<NotifyInvalidTokenParams>('sonarlint/notifyInvalidToken');
 }
 
 //#endregion
