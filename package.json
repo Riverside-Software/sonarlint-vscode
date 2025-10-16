@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Advanced linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.29.99001",
+  "version": "4.30.99001",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -15,7 +15,7 @@
   },
   "license": "SEE LICENSE IN LICENSE.txt",
   "engines": {
-    "vscode": "^1.82.0"
+    "vscode": "^1.99.3"
   },
   "categories": [
     "Linters",
@@ -196,6 +196,13 @@
             }
           ],
           "scope": "resource"
+        },
+        "sonarlint-abl.automaticAnalysis": {
+          "order": 5,
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Enable or disable on-the-fly analysis of files you work on. When enabled, SonarQube for IDE will automatically analyze open files and show findings in real-time.",
+          "scope": "application"
         },
         "sonarlint-abl.testFilePattern": {
           "order": 12,
@@ -530,14 +537,28 @@
         "title": "Focus on New Code",
         "category": "CABL",
         "icon": "$(eye)",
-        "enablement": "view == sonarqube-abl.Findings && !config.sonarlint.focusOnNewCode"
+        "enablement": "view == sonarqube-abl.Findings && !config.sonarlint-abl.focusOnNewCode"
       },
       {
         "command": "SonarLint.ABL.NewCodeDefinition.Disable",
         "title": "Focus on Overall Code",
         "category": "CABL",
         "icon": "$(eye-closed)",
-        "enablement": "view == sonarqube-abl.Findings && config.sonarlint.focusOnNewCode"
+        "enablement": "view == sonarqube-abl.Findings && config.sonarlint-abl.focusOnNewCode"
+      },
+      {
+        "command": "SonarLint.ABL.AutomaticAnalysis.Enable",
+        "title": "Enable Automatic Analysis",
+        "category": "CABL",
+        "icon": "$(sync)",
+        "enablement": "!config.sonarlint-abl.automaticAnalysis"
+      },
+      {
+        "command": "SonarLint.ABL.AutomaticAnalysis.Disable",
+        "title": "Disable Automatic Analysis",
+        "category": "CABL",
+        "icon": "$(sync-ignored)",
+        "enablement": "config.sonarlint-abl.automaticAnalysis"
       }
     ],
     "viewsContainers": {
@@ -651,6 +672,16 @@
         {
           "command": "SonarLint.ABL.NewCodeDefinition.Disable",
           "when": "view == sonarqube-abl.Findings && config.sonarlint-abl.focusOnNewCode",
+          "group": "navigation"
+        },
+        {
+          "command": "SonarLint.ABL.AutomaticAnalysis.Enable",
+          "when": "view == sonarqube-abl.Findings && !config.sonarlint-abl.automaticAnalysis",
+          "group": "navigation"
+        },
+        {
+          "command": "SonarLint.ABL.AutomaticAnalysis.Disable",
+          "when": "view == sonarqube-abl.Findings && config.sonarlint-abl.automaticAnalysis",
           "group": "navigation"
         },
         {

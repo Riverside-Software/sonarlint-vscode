@@ -82,6 +82,7 @@ import { AnalyzeFileTool } from './languageModelTools/analyzeFileTool';
 import { TaintVulnerabilityDecorator } from './issue/taintVulnerabilityDecorator';
 import { helpAndFeedbackLinkClicked } from './help/linkTelemetry';
 import { FindingNode } from './findings/findingTypes/findingNode';
+import { AutomaticAnalysisService } from './settings/automaticAnalysis';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -188,7 +189,6 @@ export async function activate(context: VSCode.ExtensionContext) {
     },
     documentSelector: DOCUMENT_SELECTOR,
     synchronize: {
-      configurationSection: ['sonarlint-abl', 'abl'],
       fileEvents: [pythonWatcher, helmWatcher, sharedConnectedModeConfigurationWatcher]
     },
     uriConverters: {
@@ -214,13 +214,17 @@ export async function activate(context: VSCode.ExtensionContext) {
             installTime,
             isTelemetryEnabled: VSCode.env.isTelemetryEnabled,
             ...(VSCode.env.isTelemetryEnabled && { machineId: VSCode.env.machineId })
-          }
+          },
         },
-        enableNotebooks: true
+        enableNotebooks: true,
+        connections: VSCode.workspace.getConfiguration('sonarlint-abl.connectedMode').get('connections', {"sonarqube": [], "sonarcloud": []}),
+        rules: VSCode.workspace.getConfiguration('sonarlint-abl').get('rules', {}),
+        focusOnNewCode: VSCode.workspace.getConfiguration('sonarlint-abl').get('focusOnNewCode', false),
+        automaticAnalysis: VSCode.workspace.getConfiguration('sonarlint-abl').get('automaticAnalysis', true)
       };
     },
     outputChannel: getLogOutput(),
-    revealOutputChannelOn: 4 // never
+    revealOutputChannelOn: 4, // never
   };
 
   // Create the language client and start the client.
@@ -246,10 +250,18 @@ export async function activate(context: VSCode.ExtensionContext) {
   FixSuggestionService.init(languageClient);
   ContextManager.instance.setConnectedModeContext(context);
 
+  FindingsTreeDataProvider.init(context, languageClient);
+  findingsTreeDataProvider = FindingsTreeDataProvider.instance;
+  findingsView = VSCode.window.createTreeView('SonarQube.Findings', {
+    treeDataProvider: findingsTreeDataProvider
+  });
+  context.subscriptions.push(findingsView);
+
   installCustomRequestHandlers(context);
   initializeLanguageModelTools(context);
 
   const referenceBranchStatusItem = VSCode.window.createStatusBarItem(VSCode.StatusBarAlignment.Left, 1);
+  const automaticAnalysisStatusItem = VSCode.window.createStatusBarItem(VSCode.StatusBarAlignment.Left, 2);
   const scm = await initScm(languageClient, referenceBranchStatusItem);
   context.subscriptions.push(scm);
   context.subscriptions.push(
@@ -258,6 +270,8 @@ export async function activate(context: VSCode.ExtensionContext) {
     })
   );
   context.subscriptions.push(referenceBranchStatusItem);
+  context.subscriptions.push(automaticAnalysisStatusItem);
+  
   VSCode.window.onDidChangeActiveTextEditor(e => {
     scm.updateReferenceBranchStatusItem(e);
     NewCodeDefinitionService.instance.updateNewCodeStatusBarItem(e);
@@ -313,6 +327,9 @@ export async function activate(context: VSCode.ExtensionContext) {
     }
   }));
 
+  const automaticAnalysisService = new AutomaticAnalysisService(automaticAnalysisStatusItem, findingsView);
+  automaticAnalysisService.updateAutomaticAnalysisStatusBarAndFindingsViewMessage();
+
   VSCode.workspace.onDidChangeConfiguration(async event => {
     if (event.affectsConfiguration('sonarlint-abl.rules')) {
       allRulesTreeDataProvider.refresh();
@@ -326,6 +343,13 @@ export async function activate(context: VSCode.ExtensionContext) {
       NewCodeDefinitionService.instance.updateFocusOnNewCodeState();
       findingsTreeDataProvider.refresh();
       TaintVulnerabilityDecorator.instance.updateTaintVulnerabilityDecorationsForFile();
+    }
+    if (event.affectsConfiguration('sonarlint.automaticAnalysis')) {
+      automaticAnalysisService.updateAutomaticAnalysisStatusBarAndFindingsViewMessage();
+    }
+    if (event.affectsConfiguration('sonarlint')) {
+      // only send notification to let language server pull the latest settings when the change is relevant
+      languageClient.sendNotification('workspace/didChangeConfiguration', { settings: null })
     }
   });
 
@@ -348,13 +372,7 @@ export async function activate(context: VSCode.ExtensionContext) {
   });
   context.subscriptions.push(allConnectionsView);
 
-  FindingsTreeDataProvider.init(context, languageClient);
-  findingsTreeDataProvider = FindingsTreeDataProvider.instance;
-  findingsView = VSCode.window.createTreeView('SonarQube.Findings', {
-    treeDataProvider: findingsTreeDataProvider
-  });
-
-  context.subscriptions.push(findingsView);
+  automaticAnalysisStatusItem.show();
   
   // Update badge when tree data changes
   context.subscriptions.push(
@@ -503,6 +521,17 @@ function registerCommands(context: VSCode.ExtensionContext) {
     VSCode.commands.registerCommand('SonarLint.NewCodeDefinition.Disable', () => {
       VSCode.workspace.getConfiguration('sonarlint')
               .update('focusOnNewCode', false, VSCode.ConfigurationTarget.Global);
+    })
+  );
+
+  context.subscriptions.push(
+    VSCode.commands.registerCommand('SonarLint.AutomaticAnalysis.Enable', () => {
+      VSCode.workspace.getConfiguration('sonarlint')
+              .update('automaticAnalysis', true, VSCode.ConfigurationTarget.Global);
+    }),
+    VSCode.commands.registerCommand('SonarLint.AutomaticAnalysis.Disable', () => {
+      VSCode.workspace.getConfiguration('sonarlint')
+              .update('automaticAnalysis', false, VSCode.ConfigurationTarget.Global);
     })
   );
 
