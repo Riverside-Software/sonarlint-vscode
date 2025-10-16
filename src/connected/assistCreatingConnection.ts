@@ -17,7 +17,7 @@ import { sonarCloudRegionToLabel } from '../util/util';
 
 export function assistCreatingConnection(context: vscode.ExtensionContext) {
   return async (assistCreatingConnectionParams: ExtendedClient.AssistCreatingConnectionParams) => {
-    let newConnectionId: string | null;
+    let newConnectionId: string | void;
     try {
       newConnectionId = await confirmConnectionDetailsAndSave(context)(
         assistCreatingConnectionParams.isSonarCloud,
