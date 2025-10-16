@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Advanced linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.25.99007",
+  "version": "4.26.99001",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -146,7 +146,7 @@
         },
         "sonarlint-abl.connectedMode.project": {
           "order": 4,
-          "markdownDescription": "Bind the current workspace folder to a [SonarQube Server](command:SonarLint.ABL.HelpAndFeedbackLinkClicked?%22sonarQubeProductPage%22) project. Requires connection details to be defined in the setting `#sonarlint-abl.connectedMode.connections.sonarqube#`.\n\nBinding a workspace folder to a server project allows SonarQube for VS Code to match, as much as possible, the same rules and settings as found on the server, and hence share the analysis configuration with other contributors.\n\nExample:\n\n    \"sonarlint-abl.connectedMode.project\": {\n      \"projectKey\": \"my_project\",\n      \"connectionId\":\"my_connection_id\"\n    }\n\n",
+          "markdownDescription": "Bind the current workspace folder to a [SonarQube Server](command:SonarLint.HelpAndFeedbackLinkClicked?%22sonarQubeProductPage%22) project. Requires connection details to be defined in the setting `#sonarlint-abl.connectedMode.connections.sonarqube#`.\n\nBinding a workspace folder to a server project allows SonarQube for VS Code to match, as much as possible, the same rules and settings as found on the server, and hence share the analysis configuration with other contributors.\n\nExample:\n\n    \"sonarlint-abl.connectedMode.project\": {\n      \"projectKey\": \"my_project\",\n      \"connectionId\":\"my_connection_id\"\n    }\n\n",
           "examples": [
             {
               "projectKey": "<replace_with_server_project_key>"
@@ -367,13 +367,12 @@
       },
       {
         "command": "SonarLint.ABL.ScanForHotspotsInFolder",
-        "title": "In Whole Folder",
-        "enablement": "view == sonarlint-abl.SecurityHotspots && sonarlint-abl.Hotspots.ShowMode == 'OpenFiles'"
+        "title": "Scan for Hotspots in Folder",
+        "category": "CABL"
       },
       {
-        "command": "SonarLint.ABL.ShowHotspotsInOpenFiles",
-        "title": "In Open Files",
-        "enablement": "view == sonarlint-abl.SecurityHotspots && sonarlint-abl.Hotspots.ShowMode == 'Folder'"
+        "command": "SonarQube.ABL.ShowAllInfoForFinding",
+        "title": "Show finding location and details"
       },
       {
         "command": "SonarLint.ABL.FindRuleByKey",
@@ -383,12 +382,27 @@
       {
         "command": "SonarLint.ABL.ClearLocations",
         "title": "Clear",
-        "enablement": "view == sonarlint-abl.IssueLocations || view == sonarlint-abl.SecurityHotspots"
+        "enablement": "view == sonarlint-abl.IssueLocations || view == sonarqube-abl.Findings"
       },
       {
         "command": "SonarLint.ABL.ClearHotspotLocations",
         "title": "Clear Highlighting",
-        "enablement": "view == sonarlint-abl.SecurityHotspots"
+        "enablement": "view == sonarqube-abl.Findings"
+      },
+      {
+        "command": "SonarLint.ABL.TriggerBrowseTaintCommand",
+        "title": "Open Taint Vulnerability on remote server",
+        "enablement": "view == sonarqube-abl.Findings"
+      },
+      {
+        "command": "SonarQube.ABL.TriggerAiCodeFixCommand",
+        "title": "✧˖° Fix with AI CodeFix",
+        "enablement": "view == sonarqube-abl.Findings"
+      },
+      {
+        "command": "SonarQube.ABL.TriggerResolveTaintCommand",
+        "title": "Resolve issue as...",
+        "enablement": "view == sonarqube-abl.Findings"
       },
       {
         "command": "SonarLint.ABL.ConnectToSonarQube",
@@ -435,31 +449,25 @@
         "command": "SonarLint.ABL.OpenHotspotOnServer",
         "title": "Review on Server",
         "category": "CABL",
-        "enablement": "view == sonarlint-abl.SecurityHotspots && viewItem == knownHotspotItem"
+        "enablement": "view == sonarqube-abl.Findings && viewItem == knownHotspotItem"
       },
       {
         "command": "SonarLint.ABL.ShowHotspotRuleDescription",
         "title": "Show Rule Description",
         "category": "CABL",
-        "enablement": "view == sonarlint-abl.SecurityHotspots && viewItem == newHotspotItem"
+        "enablement": "view == sonarqube-abl.Findings && viewItem == newHotspotItem"
       },
       {
         "command": "SonarLint.ABL.ShowHotspotDetails",
         "title": "Show Hotspot Details",
         "category": "CABL",
-        "enablement": "view == sonarlint-abl.SecurityHotspots && (viewItem == knownHotspotItem || viewItem == remoteHotspotItem)"
-      },
-      {
-        "command": "SonarLint.ABL.HideHotspot",
-        "title": "Hide Security Hotspot",
-        "category": "CABL",
-        "enablement": "view == sonarlint-abl.SecurityHotspots && viewItem == remoteHotspotItem"
+        "enablement": "view == sonarqube-abl.Findings && viewItem == knownHotspotItem"
       },
       {
         "command": "SonarLint.ABL.ChangeHotspotStatus",
         "title": "Change Status",
         "category": "CABL",
-        "enablement": "view == sonarlint-abl.SecurityHotspots && viewItem == knownHotspotItem"
+        "enablement": "view == sonarqube-abl.Findings && viewItem == knownHotspotItem"
       },
       {
         "command": "SonarLint.ABL.HelpAndFeedbackLinkClicked",
@@ -474,7 +482,7 @@
       {
         "command": "SonarLint.ABL.EnableLogsAndShowOutput",
         "title": "Enable Verbose Logging and Show Output",
-        "category": "SonarQube"
+        "category": "CABL"
       },
       {
         "command": "SonarLint.ABL.ShareConnectedModeConfiguration",
@@ -482,6 +490,20 @@
         "category": "CABL",
         "icon": "$(export)",
         "enablement": "view == sonarlint-abl.ConnectedMode"
+      },
+      {
+        "command": "SonarLint.ABL.NewCodeDefinition.Enable",
+        "title": "Focus on New Code",
+        "category": "CABL",
+        "icon": "$(eye)",
+        "enablement": "view == sonarqube-abl.Findings && !config.sonarlint.focusOnNewCode"
+      },
+      {
+        "command": "SonarLint.ABL.NewCodeDefinition.Disable",
+        "title": "Focus on Overall Code",
+        "category": "CABL",
+        "icon": "$(eye-closed)",
+        "enablement": "view == sonarqube-abl.Findings && config.sonarlint.focusOnNewCode"
       }
     ],
     "viewsContainers": {
@@ -490,6 +512,14 @@
           "icon": "images/sonarlint.svg",
           "id": "sonarlint-abl",
           "title": "CABL"
+        }
+      ],
+      "panel": [
+        {
+          "icon": "images/sonarlint.svg",
+          "id": "sonarqube-abl",
+          "title": "CABL",
+          "when": "sonarqube.someFoldersUseConnectedMode"
         }
       ]
     },
@@ -504,19 +534,13 @@
       "sonarlint-abl": [
         {
           "type": "tree",
-          "id": "SonarQube-abl.GetStarted",
+          "id": "sonarqube-abl.GetStarted",
           "name": "Get Started",
           "when": "sonarlint-abl.shouldShowGetStartedView"
         },
         {
           "id": "sonarlint-abl.ConnectedMode",
           "name": "Connected Mode"
-        },
-        {
-          "id": "sonarlint-abl.SecurityHotspots",
-          "name": "Security Hotspots",
-          "visibility": "collapsed",
-          "when": "sonarlint-abl.someFoldersUseConnectedMode"
         },
         {
           "id": "sonarlint-abl.AllRules",
@@ -527,6 +551,13 @@
         {
           "id": "sonarlint-abl.HelpAndFeedback",
           "name": "Help and Feedback"
+        }
+      ],
+      "sonarqube-abl": [
+        {
+          "id": "sonarqube-abl.Findings",
+          "name": "CABL Findings",
+          "when": "sonarlint-abl.someFoldersUseConnectedMode"
         }
       ]
     },
@@ -540,12 +571,12 @@
         "contents": "[Connected Mode](command:SonarLint.ABL.HelpAndFeedbackLinkClicked?%22connectedModeDocs%22) links CABL to SonarQube Server. \n\n[Connect to SonarQube Server](command:SonarLint.ABL.ConnectToSonarQube)\n\nAnalyze more languages, detect more issues on the whole project, receive notifications about the quality gate status, and more."
       },
       {
-        "view": "sonarlint-abl.SecurityHotspots",
-        "contents": "Security Hotspots detected in open files will be displayed here. [Learn More](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/security-hotspots).\n Using the In Whole Folder feature may consume excessive resources depending on the size of your project. Please check the [documentation](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/security-hotspots/#reporting-security-hotspots-in-the-whole-folder) for recommendations to minimize the impact of a full project analysis."
+        "view": "SonarQube-abl.GetStarted",
+        "contents": "Automatically find and fix code quality and security issues as you write, using powerful linting tools built right into your code editor.\n\n[Get Started with SonarQube for IDE](command:SonarLint.ABL.HelpAndFeedbackLinkClicked?%22sonarLintWalkthrough%22) $(arrow-right)"
       },
       {
-        "view": "SonarQube-abl.GetStarted",
-        "contents": "Automatically find and fix code quality and security issues as you write, using powerful linting tools built right into your code editor."
+        "view": "SonarQube-abl.Findings",
+        "contents": "No [Security Hotspots](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/security-hotspots/) or [Taint Vulnerabilities](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/taint-vulnerabilities/) found in this project."
       }
     ],
     "menus": {
@@ -566,16 +597,6 @@
           "group": "navigation"
         },
         {
-          "command": "SonarLint.ABL.ScanForHotspotsInFolder",
-          "when": "view == sonarlint-abl.SecurityHotspots",
-          "group": "navigation"
-        },
-        {
-          "command": "SonarLint.ABL.ShowHotspotsInOpenFiles",
-          "when": "view == sonarlint-abl.SecurityHotspots",
-          "group": "navigation"
-        },
-        {
           "command": "SonarLint.ABL.FindRuleByKey",
           "when": "view == sonarlint-abl.AllRules"
         },
@@ -588,6 +609,16 @@
           "command": "SonarLint.ABL.ConnectToSonarQube",
           "when": "view == sonarlint-abl.ConnectedMode",
           "group": "inline"
+        },
+        {
+          "command": "SonarLint.ABL.NewCodeDefinition.Enable",
+          "when": "view == sonarqube-abl.Findings && !config.sonarlint-abl.focusOnNewCode",
+          "group": "navigation"
+        },
+        {
+          "command": "SonarLint.ABL.NewCodeDefinition.Disable",
+          "when": "view == sonarqube-abl.Findings && config.sonarlint-abl.focusOnNewCode",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -645,33 +676,42 @@
         {
           "command": "SonarLint.ABL.ShowHotspotRuleDescription",
           "title": "Show Rule Description",
-          "when": "view == sonarlint-abl.SecurityHotspots && viewItem == newHotspotItem"
+          "when": "view == sonarqube-abl.Findings && viewItem == newHotspotItem"
         },
         {
           "command": "SonarLint.ABL.ShowHotspotDetails",
           "title": "Show Hotspot Details",
-          "when": "view == sonarlint-abl.SecurityHotspots && (viewItem == knownHotspotItem || viewItem == remoteHotspotItem)"
+          "when": "view == sonarqube-abl.Findings && viewItem == knownHotspotItem"
         },
         {
           "command": "SonarLint.ABL.ChangeHotspotStatus",
           "title": "Change Status",
-          "when": "view == sonarlint-abl.SecurityHotspots && viewItem == knownHotspotItem"
+          "when": "view == sonarqube-abl.Findings && viewItem == knownHotspotItem"
         },
         {
           "command": "SonarLint.ABL.OpenHotspotOnServer",
           "title": "Review on Server",
-          "when": "view == sonarlint-abl.SecurityHotspots && viewItem == knownHotspotItem"
+          "when": "view == sonarqube-abl.Findings && viewItem == knownHotspotItem"
         },
         {
           "command": "SonarLint.ABL.ClearHotspotLocations",
           "title": "Clear Highlighting",
-          "when": "view == sonarlint-abl.SecurityHotspots && viewItem == newHotspotItem || viewItem == knownHotspotItem || viewItem == remoteHotspotItem"
+          "when": "view == sonarqube-abl.Findings && viewItem == newHotspotItem || viewItem == knownHotspotItem"
         },
         {
-          "command": "SonarLint.ABL.HideHotspot",
-          "title": "Hide Security Hotspot",
-          "category": "CABL",
-          "when": "view == sonarlint-abl.SecurityHotspots && viewItem == remoteHotspotItem"
+          "command": "SonarLint.ABL.TriggerBrowseTaintCommand",
+          "title": "Open Taint Vulnerability on remote server",
+          "when": "view == sonarqube-abl.Findings && viewItem == taintVulnerabilityItem || viewItem == AICodeFixableTaintVulnerabilityItem"
+        },
+        {
+          "command": "SonarQube.ABL.TriggerAiCodeFixCommand",
+          "title": "✧˖° Fix with AI CodeFix",
+          "when": "view == sonarqube-abl.Findings && viewItem == AICodeFixableTaintVulnerabilityItem"
+        },
+        {
+          "command": "SonarQube.ABL.TriggerResolveTaintCommand",
+          "title": "Resolve issue as...",
+          "when": "view == sonarqube-abl.Findings && viewItem == taintVulnerabilityItem || viewItem == AICodeFixableTaintVulnerabilityItem"
         }
       ]
     },

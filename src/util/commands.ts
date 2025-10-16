@@ -40,7 +40,6 @@ export namespace Commands {
 
   export const INSTALL_MANAGED_JRE = 'SonarLint.ABL.InstallManagedJre';
 
-  export const HIDE_HOTSPOT = 'SonarLint.ABL.HideHotspot';
   export const SHOW_HOTSPOT_DESCRIPTION = 'SonarLint.ABL.ShowHotspotDescription';
   export const CONFIGURE_COMPILATION_DATABASE = 'SonarLint.ABL.ConfigureCompilationDatabase';
 
@@ -59,7 +58,6 @@ export namespace Commands {
   export const SHOW_HOTSPOT_RULE_DESCRIPTION = 'SonarLint.ABL.ShowHotspotRuleDescription';
   export const SHOW_HOTSPOT_DETAILS = 'SonarLint.ABL.ShowHotspotDetails';
   export const OPEN_HOTSPOT_ON_SERVER = 'SonarLint.ABL.OpenHotspotOnServer';
-  export const HIGHLIGHT_REMOTE_HOTSPOT_LOCATION = 'SonarLint.ABL.HighlightRemoteHotspotLocation';
   export const CLEAR_HOTSPOT_HIGHLIGHTING = 'SonarLint.ABL.ClearHotspotLocations';
   export const SHOW_HOTSPOTS_IN_OPEN_FILES = 'SonarLint.ABL.ShowHotspotsInOpenFiles';
   export const SCAN_FOR_HOTSPOTS_IN_FOLDER = 'SonarLint.ABL.ScanForHotspotsInFolder';
@@ -74,5 +72,10 @@ export namespace Commands {
   export const NEW_CODE_DEFINITION = 'SonarLint.ABL.NewCodeDefinition';
   export const AUTO_BIND_WORKSPACE_FOLDERS = 'SonarLint.ABL.AutoBindWorkspaceFolders';
 
-  export const FOCUS_ON_CONNECTION = 'SonarLint.FocusOnConnection';
+  export const FOCUS_ON_CONNECTION = 'SonarLint.ABL.FocusOnConnection';
+
+  export const SHOW_ALL_INFO_FOR_FINDING = 'SonarQube.ABL.ShowAllInfoForFinding';
+  export const TRIGGER_BROWSE_TAINT_COMMAND = 'SonarLint.ABL.TriggerBrowseTaintCommand';
+  export const TRIGGER_AI_CODE_FIX_COMMAND = 'SonarQube.ABL.TriggerAiCodeFixCommand';
+  export const TRIGGER_RESOLVE_TAINT_COMMAND = 'SonarQube.ABL.TriggerResolveTaintCommand';
 }

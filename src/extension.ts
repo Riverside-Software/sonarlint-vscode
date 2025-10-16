@@ -26,21 +26,18 @@ import {
   editSonarQubeConnection
 } from './connected/connectionsetup';
 import {
-  getHelpAndFeedbackItemById,
   HelpAndFeedbackLink,
   HelpAndFeedbackTreeDataProvider
 } from './help/helpAndFeedbackTreeDataProvider';
 import {
   changeHotspotStatus,
   getFilesForHotspotsAndLaunchScan,
-  hideSecurityHotspot,
-  HOTSPOTS_VIEW_ID,
   showHotspotDescription,
   showHotspotDetails,
   showSecurityHotspot,
   useProvidedFolderOrPickManuallyAndScan
 } from './hotspot/hotspots';
-import { AllHotspotsTreeDataProvider, HotspotNode, HotspotTreeViewItem } from './hotspot/hotspotsTreeDataProvider';
+import { FindingNode, FindingsTreeDataProvider, FindingsTreeViewItem } from './findings/findingsTreeDataProvider';
 import { getJavaConfig, installClasspathListener } from './java/java';
 import { getOpenEdgeConfig } from './openedge/openedge';
 import { LocationTreeItem, navigateToLocation, SecondaryLocationsTree } from './location/locations';
@@ -51,7 +48,7 @@ import { showRuleDescription } from './rules/rulepanel';
 import { AllRulesTreeDataProvider, LanguageNode, RuleNode, setRulesViewMessage, toggleRule } from './rules/rules';
 import { initScm, isIgnoredByScm } from './scm/scm';
 import { isFirstSecretDetected, showNotificationForFirstSecretsIssue } from './secrets/secrets';
-import { ConnectionSettingsService, migrateConnectedModeSettings, migrateSonarQubeCloudTokens } from './settings/connectionsettings';
+import { ConnectionSettingsService, migrateConnectedModeSettings } from './settings/connectionsettings';
 import {
   enableVerboseLogs,
   getCurrentConfiguration,
@@ -76,11 +73,12 @@ import { SharedConnectedModeSettingsService } from './connected/sharedConnectedM
 import { FileSystemServiceImpl } from './fileSystem/fileSystemServiceImpl';
 import { FixSuggestionService } from './fixSuggestions/fixSuggestionsService';
 import { ContextManager } from './contextManager';
-import { HAS_CLICKED_GET_STARTED_LINK } from './commons';
 import { ListPotentialSecurityIssuesTool } from './languageModelTools/listPotentialSecurityIssuesTool';
 import { ExcludeFileOrFolderTool } from './languageModelTools/excludeFileOrFolderTool';
 import { SetUpConnectedModeTool } from './languageModelTools/setUpConnectedModeTool';
 import { AnalyzeFileTool } from './languageModelTools/analyzeFileTool';
+import { TaintVulnerabilityDecorator } from './issue/taintVulnerabilityDecorator';
+import { helpAndFeedbackLinkClicked } from './help/linkTelemetry';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -100,11 +98,10 @@ let allRulesTreeDataProvider: AllRulesTreeDataProvider;
 let allRulesView: VSCode.TreeView<LanguageNode>;
 let allConnectionsView: VSCode.TreeView<ConnectionsNode>;
 let allConnectionsTreeDataProvider: AllConnectionsTreeDataProvider;
-let hotspotsTreeDataProvider: AllHotspotsTreeDataProvider;
-let allHotspotsView: VSCode.TreeView<HotspotTreeViewItem>;
+let findingsTreeDataProvider: FindingsTreeDataProvider;
+let findingsView: VSCode.TreeView<FindingsTreeViewItem>;
 let helpAndFeedbackTreeDataProvider: HelpAndFeedbackTreeDataProvider;
 let helpAndFeedbackView: VSCode.TreeView<HelpAndFeedbackLink>;
-let taintVulnerabilityCollection: VSCode.DiagnosticCollection;
 const currentProgress: Record<string, { progress: VSCode.Progress<{ increment?: number }>, resolve: () => void } | undefined> = {};
 
 async function runJavaServer(context: VSCode.ExtensionContext): Promise<StreamInfo> {
@@ -228,12 +225,7 @@ export async function activate(context: VSCode.ExtensionContext) {
 
   await languageClient.start();
 
-  taintVulnerabilityCollection = VSCode.languages.createDiagnosticCollection('SonarQube Taint Vulnerabilities');
-  context.subscriptions.push(taintVulnerabilityCollection);
-
   ConnectionSettingsService.init(context, languageClient);
-  // SLVSCODE-1164; one time migration of SonarQube Cloud tokens to set region prefix
-  await migrateSonarQubeCloudTokens();
   NewCodeDefinitionService.init(context);
   FileSystemServiceImpl.init();
   SharedConnectedModeSettingsService.init(languageClient, FileSystemServiceImpl.instance, context);
@@ -322,6 +314,8 @@ export async function activate(context: VSCode.ExtensionContext) {
     }
     if (event.affectsConfiguration('sonarlint-abl.focusOnNewCode')) {
       NewCodeDefinitionService.instance.updateFocusOnNewCodeState();
+      findingsTreeDataProvider.refresh();
+      TaintVulnerabilityDecorator.instance.updateTaintVulnerabilityDecorationsForFile();
     }
   });
 
@@ -344,19 +338,21 @@ export async function activate(context: VSCode.ExtensionContext) {
   });
   context.subscriptions.push(allConnectionsView);
 
-  AllHotspotsTreeDataProvider.init(ConnectionSettingsService.instance);
-  hotspotsTreeDataProvider = AllHotspotsTreeDataProvider.instance;
-  allHotspotsView = VSCode.window.createTreeView(HOTSPOTS_VIEW_ID, {
-    treeDataProvider: hotspotsTreeDataProvider
+  FindingsTreeDataProvider.init(context);
+  findingsTreeDataProvider = FindingsTreeDataProvider.instance;
+  findingsView = VSCode.window.createTreeView('SonarQube.Findings', {
+    treeDataProvider: findingsTreeDataProvider
   });
 
-  context.subscriptions.push(allHotspotsView);
+  context.subscriptions.push(findingsView);
 
   helpAndFeedbackTreeDataProvider = new HelpAndFeedbackTreeDataProvider();
   helpAndFeedbackView = VSCode.window.createTreeView('sonarlint-abl.HelpAndFeedback', {
     treeDataProvider: helpAndFeedbackTreeDataProvider
   });
   context.subscriptions.push(helpAndFeedbackView);
+
+  TaintVulnerabilityDecorator.init();
 
   context.subscriptions.push(onConfigurationChange());
 
@@ -434,14 +430,8 @@ function registerCommands(context: VSCode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    VSCode.commands.registerCommand(Commands.SHOW_HOTSPOT_LOCATION, (hotspot: HotspotNode) =>
+    VSCode.commands.registerCommand(Commands.SHOW_HOTSPOT_LOCATION, (hotspot: FindingNode) =>
       languageClient.showHotspotLocations(hotspot.key, hotspot.fileUri)
-    )
-  );
-
-  context.subscriptions.push(
-    VSCode.commands.registerCommand(Commands.HIGHLIGHT_REMOTE_HOTSPOT_LOCATION, (hotspot: HotspotNode) =>
-      showSecurityHotspot(allHotspotsView, hotspotsTreeDataProvider)
     )
   );
 
@@ -488,14 +478,19 @@ function registerCommands(context: VSCode.ExtensionContext) {
     showLogOutput();
   }));
 
-  context.subscriptions.push(VSCode.commands.registerCommand(Commands.INSTALL_MANAGED_JRE, installManagedJre));
-
   context.subscriptions.push(
-    VSCode.commands.registerCommand(Commands.HIDE_HOTSPOT, async () => {
-      await hideSecurityHotspot(hotspotsTreeDataProvider);
-      updateSonarLintViewContainerBadge();
+    VSCode.commands.registerCommand('SonarLint.NewCodeDefinition.Enable', () => {
+      VSCode.workspace.getConfiguration('sonarlint')
+              .update('focusOnNewCode', true, VSCode.ConfigurationTarget.Global);
+    }),
+    VSCode.commands.registerCommand('SonarLint.NewCodeDefinition.Disable', () => {
+      VSCode.workspace.getConfiguration('sonarlint')
+              .update('focusOnNewCode', false, VSCode.ConfigurationTarget.Global);
     })
   );
+
+  context.subscriptions.push(VSCode.commands.registerCommand(Commands.INSTALL_MANAGED_JRE, installManagedJre));
+
   context.subscriptions.push(
     VSCode.commands.registerCommand(Commands.SHOW_HOTSPOT_DESCRIPTION, showHotspotDescription)
   );
@@ -570,41 +565,12 @@ function registerCommands(context: VSCode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    VSCode.commands.registerCommand(Commands.TRIGGER_HELP_AND_FEEDBACK_LINK, helpAndFeedbackItemOrId => {
-      let itemId: string;
-      if (!helpAndFeedbackItemOrId) {
-        itemId = 'getHelp';
-      } else if (typeof helpAndFeedbackItemOrId === 'string') {
-        itemId = helpAndFeedbackItemOrId;
-      } else {
-        itemId = helpAndFeedbackItemOrId.id;
-      }
-      const { command, url } = getHelpAndFeedbackItemById(itemId);
-      languageClient.helpAndFeedbackLinkClicked(itemId);
-      if (command) {
-        const args = command.arguments || [];
-        VSCode.commands.executeCommand(command.command, ...args);
-        // if the link clicked was the get started one, we update the global flag to not show it again
-        if (itemId === 'sonarLintWalkthrough') {
-          context.globalState.update(HAS_CLICKED_GET_STARTED_LINK, true);
-          ContextManager.instance.setGetStartedViewContext(context);
-        }
-      } else {
-        VSCode.commands.executeCommand(Commands.OPEN_BROWSER, VSCode.Uri.parse(url));
-      }
-    })
+    VSCode.commands.registerCommand(Commands.TRIGGER_HELP_AND_FEEDBACK_LINK, helpAndFeedbackLinkClicked(languageClient))
   );
 
   context.subscriptions.push(
     VSCode.commands.registerCommand(Commands.SCAN_FOR_HOTSPOTS_IN_FOLDER, async folder => {
-      await hotspotsTreeDataProvider.showHotspotsInFolder();
       await scanFolderForHotspotsCommandHandler(folder);
-    })
-  );
-  context.subscriptions.push(
-    VSCode.commands.registerCommand(Commands.SHOW_HOTSPOTS_IN_OPEN_FILES, async () => {
-      await hotspotsTreeDataProvider.showHotspotsInOpenFiles();
-      languageClient.forgetFolderHotspots();
     })
   );
 
@@ -696,31 +662,19 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
     return VSCode.commands.executeCommand(Commands.OPEN_SETTINGS, targetSection);
   });
   languageClient.onNotification(protocol.ShowHotspotNotification.type, h =>
-    showSecurityHotspot(allHotspotsView, hotspotsTreeDataProvider, h)
+    showSecurityHotspot(findingsView, findingsTreeDataProvider, h)
   );
   languageClient.onNotification(protocol.ShowIssueOrHotspotNotification.type, showAllLocations);
   languageClient.onNotification(protocol.NeedCompilationDatabaseRequest.type, notifyMissingCompileCommands(context));
   languageClient.onRequest(protocol.GetTokenForServer.type, serverId => getTokenForServer(serverId));
   languageClient.onNotification(protocol.PublishHotspotsForFile.type, async hotspotsPerFile => {
-    await hotspotsTreeDataProvider.refresh(hotspotsPerFile);
-    updateSonarLintViewContainerBadge();
+    findingsTreeDataProvider.updateHotspots(hotspotsPerFile);
+    updateFindingsViewContainerBadge();
   });
   languageClient.onNotification(protocol.PublishTaintVulnerabilitiesForFile.type, async taintVulnerabilitiesPerFile => {
-    const diagnostics = taintVulnerabilitiesPerFile.diagnostics.map(diagnostic => {
-      const d = new VSCode.Diagnostic(
-        new VSCode.Range(
-          new VSCode.Position(diagnostic.range.start.line, diagnostic.range.start.character),
-          new VSCode.Position(diagnostic.range.end.line, diagnostic.range.end.character)
-        ),
-        diagnostic.message,
-        getSeverity(diagnostic.severity)
-      );
-      d.source = diagnostic.source;
-      d.code = diagnostic.code;
-      d['data'] = diagnostic.data;
-      return d;
-    });
-    taintVulnerabilityCollection.set(VSCode.Uri.parse(taintVulnerabilitiesPerFile.uri), diagnostics);
+    findingsTreeDataProvider.updateTaintVulnerabilities(taintVulnerabilitiesPerFile.uri, taintVulnerabilitiesPerFile.diagnostics);
+    updateFindingsViewContainerBadge();
+    TaintVulnerabilityDecorator.instance.updateTaintVulnerabilityDecorationsForFile(VSCode.Uri.parse(taintVulnerabilitiesPerFile.uri));
   });
 
   languageClient.onRequest(
@@ -743,15 +697,11 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
   });
 }
 
-function updateSonarLintViewContainerBadge() {
-  const allHotspotsCount = hotspotsTreeDataProvider.countAllHotspots();
-  allHotspotsView.badge =
-    allHotspotsCount > 0
-      ? {
-          value: allHotspotsCount,
-          tooltip: `Total ${allHotspotsCount} Security Hotspots`
-        }
-      : undefined;
+function updateFindingsViewContainerBadge() {
+  findingsView.badge = findingsTreeDataProvider.getTotalFindingsCount() > 0 ? {
+    value: findingsTreeDataProvider.getTotalFindingsCount(),
+    tooltip: `Total ${findingsTreeDataProvider.getTotalFindingsCount()} SonarQube Security Findings`
+  } : undefined;
 }
 
 async function getTokenForServer(serverId: string): Promise<string> {
@@ -772,6 +722,8 @@ async function showAllLocations(issue: protocol.Issue) {
     issueLocationsView.message = null;
   }
   if (issue.flows.length > 0) {
+    // make sure the view is visible
+    ContextManager.instance.setIssueLocationsContext();
     issueLocationsView.reveal(secondaryLocationsTree.getChildren(null)[0]);
   }
 }
