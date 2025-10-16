@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Advanced linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.30.99001",
+  "version": "4.31.99001",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -307,7 +307,13 @@
         "sonarlint-abl.earlyAccess.showRegionSelection": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Show region selection while creating SonarQube Cloud Connection _(Early Access)_",
+          "markdownDescription": "Show region selection while creating SonarQube Cloud Connection",
+          "scope": "machine"
+        },
+        "sonarlint.startFlightRecorder": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Start the language server's flight recorder mode.\n\n⚠ **This feature shares detailed information with SonarSource (logs, telemetry events) that may include _confidential_ data, only enable if requested to help investigate an issue.**",
           "scope": "machine"
         }
       }
@@ -325,8 +331,9 @@
       },
       {
         "command": "SonarLint.ABL.AnalyseOpenFile",
-        "title": "Analyse current file ignoring excludes",
-        "category": "CABL"
+        "title": "Analyze Current File with SonarQube",
+        "category": "CABL",
+        "icon": "$(sonarqube-analysis)"
       },
       {
         "command": "SonarLint.AutoBindWorkspaceFolders",
@@ -559,6 +566,12 @@
         "category": "CABL",
         "icon": "$(sync-ignored)",
         "enablement": "config.sonarlint-abl.automaticAnalysis"
+      },
+      {
+        "command": "SonarQube.ABL.DumpBackendThreads",
+        "title": "Dump Backend Threads",
+        "category": "CABL",
+        "enablement": "sonarqube-abl.flightRecorderRunning"
       }
     ],
     "viewsContainers": {
@@ -634,6 +647,12 @@
       }
     ],
     "menus": {
+      "editor/title": [
+        {
+          "command": "SonarLint.ABL.AnalyseOpenFile",
+          "group": "navigation"
+        }
+      ],
       "view/title": [
         {
           "command": "SonarLint.ABL.ShowAllRules",
@@ -906,6 +925,13 @@
         "default": {
           "fontPath": "icons/sonarlint.woff",
           "fontCharacter": "H"
+        }
+      },
+      "sonarqube-analysis":{
+        "description": "Run SonarQube Analysis",
+        "default": {
+          "fontPath": "icons/sonarlint.woff",
+          "fontCharacter": "A"
         }
       }
     },
