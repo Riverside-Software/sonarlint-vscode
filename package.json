@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Advanced linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.26.99001",
+  "version": "4.27.99001",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -400,9 +400,44 @@
         "enablement": "view == sonarqube-abl.Findings"
       },
       {
+        "command": "SonarQube.ABL.TriggerFetchCodeActionsCommand",
+        "title": "More Actions...",
+        "enablement": "view == sonarqube-abl.Findings"
+      },
+      {
         "command": "SonarQube.ABL.TriggerResolveTaintCommand",
         "title": "Resolve issue as...",
         "enablement": "view == sonarqube-abl.Findings"
+      },
+      {
+        "command": "SonarQube.ABL.ShowAllFindings",
+        "title": "All",
+        "category": "CABL",
+        "enablement": "sonarqube-abl.findingsFilter != filter-all"
+      },
+      {
+        "command": "SonarQube.ABL.ShowFixableIssuesOnly",
+        "title": "Fix Available",
+        "category": "CABL",
+        "enablement": "sonarqube-abl.findingsFilter != filter-fix-available"
+      },
+      {
+        "command": "SonarQube.ABL.ShowOpenFilesOnly",
+        "title": "Open Files",
+        "category": "CABL",
+        "enablement": "sonarqube-abl.findingsFilter != filter-open-files"
+      },
+      {
+        "command": "SonarQube.ABL.ShowHighSeverityOnly",
+        "title": "High Severity",
+        "category": "CABL",
+        "enablement": "sonarqube-abl.findingsFilter != filter-high-severity"
+      },
+      {
+        "command": "SonarQube.ABL.ShowCurrentFileOnly",
+        "title": "Current File",
+        "category": "CABL",
+        "enablement": "sonarqube-abl.findingsFilter != filter-current-file"
       },
       {
         "command": "SonarLint.ABL.ConnectToSonarQube",
@@ -556,27 +591,26 @@
       "sonarqube-abl": [
         {
           "id": "sonarqube-abl.Findings",
-          "name": "CABL Findings",
-          "when": "sonarlint-abl.someFoldersUseConnectedMode"
+          "name": "CABL Findings"
         }
       ]
     },
     "viewsWelcome": [
       {
         "view": "sonarlint-abl.IssueLocations",
-        "contents": "No locations to show.\nUse \"Show all locations\" code action from a SonarQube for VS Code issue in the \"Problems\" view.\n[Show Problems](command:workbench.panel.markers.view.focus)"
+        "contents": "No locations to show.\nSelect a SonarQube issue in the \"CABL\" view.\n[Show Findings](command:SonarQube.ABL.Findings.focus)"
       },
       {
         "view": "sonarlint-abl.ConnectedMode",
         "contents": "[Connected Mode](command:SonarLint.ABL.HelpAndFeedbackLinkClicked?%22connectedModeDocs%22) links CABL to SonarQube Server. \n\n[Connect to SonarQube Server](command:SonarLint.ABL.ConnectToSonarQube)\n\nAnalyze more languages, detect more issues on the whole project, receive notifications about the quality gate status, and more."
       },
       {
-        "view": "SonarQube-abl.GetStarted",
+        "view": "sonarqube-abl.GetStarted",
         "contents": "Automatically find and fix code quality and security issues as you write, using powerful linting tools built right into your code editor.\n\n[Get Started with SonarQube for IDE](command:SonarLint.ABL.HelpAndFeedbackLinkClicked?%22sonarLintWalkthrough%22) $(arrow-right)"
       },
       {
-        "view": "SonarQube-abl.Findings",
-        "contents": "No [Security Hotspots](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/security-hotspots/) or [Taint Vulnerabilities](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/taint-vulnerabilities/) found in this project."
+        "view": "sonarqube-abl.Findings",
+        "contents": "No SonarQube issues to display."
       }
     ],
     "menus": {
@@ -619,6 +653,70 @@
           "command": "SonarLint.ABL.NewCodeDefinition.Disable",
           "when": "view == sonarqube-abl.Findings && config.sonarlint-abl.focusOnNewCode",
           "group": "navigation"
+        },
+        {
+          "submenu": "sonarqube-abl.FindingsFilter",
+          "when": "view == sonarqube-abl.Findings && sonarqube-abl.findingsFilter == filter-all",
+          "group": "navigation"
+        },
+        {
+          "submenu": "sonarqube-abl.FindingsFilterActive",
+          "when": "view == sonarqube-abl.Findings && sonarqube-abl.findingsFilter != filter-all",
+          "group": "navigation"
+        }
+      ],
+      "sonarqube-abl.FindingsFilter": [
+        {
+          "command": "SonarQube.ABL.ShowAllFindings",
+          "when": "view == sonarqube-abl.Findings",
+          "group": "1_filter"
+        },
+        {
+          "command": "SonarQube.ABL.ShowFixableIssuesOnly",
+          "when": "view == sonarqube-abl.Findings",
+          "group": "1_filter"
+        },
+        {
+          "command": "SonarQube.ABL.ShowOpenFilesOnly",
+          "when": "view == sonarqube-abl.Findings",
+          "group": "1_filter"
+        },
+        {
+          "command": "SonarQube.ABL.ShowHighSeverityOnly",
+          "when": "view == sonarqube-abl.Findings",
+          "group": "1_filter"
+        },
+        {
+          "command": "SonarQube.ABL.ShowCurrentFileOnly",
+          "when": "view == sonarqube-abl.Findings",
+          "group": "1_filter"
+        }
+      ],
+      "sonarqube-abl.FindingsFilterActive": [
+        {
+          "command": "SonarQube.ABL.ShowAllFindings",
+          "when": "view == sonarqube-abl.Findings",
+          "group": "1_filter"
+        },
+        {
+          "command": "SonarQube.ABL.ShowFixableIssuesOnly",
+          "when": "view == sonarqube-abl.Findings",
+          "group": "1_filter"
+        },
+        {
+          "command": "SonarQube.ABL.ShowOpenFilesOnly",
+          "when": "view == sonarqube-abl.Findings",
+          "group": "1_filter"
+        },
+        {
+          "command": "SonarQube.ABL.ShowHighSeverityOnly",
+          "when": "view == sonarqube-abl.Findings",
+          "group": "1_filter"
+        },
+        {
+          "command": "SonarQube.ABL.ShowCurrentFileOnly",
+          "when": "view == sonarqube-abl.Findings",
+          "group": "1_filter"
         }
       ],
       "view/item/context": [
@@ -701,17 +799,22 @@
         {
           "command": "SonarLint.ABL.TriggerBrowseTaintCommand",
           "title": "Open Taint Vulnerability on remote server",
-          "when": "view == sonarqube-abl.Findings && viewItem == taintVulnerabilityItem || viewItem == AICodeFixableTaintVulnerabilityItem"
+          "when": "view == sonarqube-abl.Findings && viewItem == taintVulnerabilityItem || viewItem == AICodeFixableTaintItem"
         },
         {
           "command": "SonarQube.ABL.TriggerAiCodeFixCommand",
           "title": "✧˖° Fix with AI CodeFix",
-          "when": "view == sonarqube-abl.Findings && viewItem == AICodeFixableTaintVulnerabilityItem"
+          "when": "view == sonarqube-abl.Findings && (viewItem == AICodeFixableTaintItem || viewItem == AICodeFixableIssueItem)"
+        },
+        {
+          "command": "SonarQube.ABL.TriggerFetchCodeActionsCommand",
+          "title": "More Actions...",
+          "when": "view == sonarqube-abl.Findings && (viewItem == AICodeFixableIssueItem || viewItem == issueItem)"
         },
         {
           "command": "SonarQube.ABL.TriggerResolveTaintCommand",
           "title": "Resolve issue as...",
-          "when": "view == sonarqube-abl.Findings && viewItem == taintVulnerabilityItem || viewItem == AICodeFixableTaintVulnerabilityItem"
+          "when": "view == sonarqube-abl.Findings && viewItem == taintVulnerabilityItem || viewItem == AICodeFixableTaintItem"
         }
       ]
     },
@@ -774,11 +877,11 @@
     "languageModelTools": [
       {
         "name": "sonarqube_list_potential_security_issues",
-        "displayName": "SonarQube: Security Hotspots",
-        "toolReferenceName": "sonarqube_getSecurityHotspots",
+        "displayName": "SonarQube: List Potential Security Issues",
+        "toolReferenceName": "sonarqube_getPotentialSecurityIssues",
         "canBeReferencedInPrompt": true,
-        "icon": "$(security-hotspot)",
-        "modelDescription": "This tool returns a list of potential security issues (Security Hotspots) in a given file. It runs SonarQube analysis on the file and returns a list of Security Hotspots detected with their location and error message.",
+        "icon": "$(unlock)",
+        "modelDescription": "This tool returns a list of potential security issues (Security Hotspots and Taint Vulnerabilities) in a given file. It runs SonarQube analysis on the file and returns a list of Security Hotspots detected with their location and error message. Additionally, it lists Taint Vulnerabilities detected by SonarQube Server or Cloud analysis.",
         "tags": [
           "sonarqube",
           "security-analysis",
@@ -873,6 +976,18 @@
             }
           }
         }
+      }
+    ],
+    "submenus": [
+      {
+        "id": "SonarQube.FindingsFilter",
+        "label": "Filter Findings",
+        "icon": "$(filter)"
+      },
+      {
+        "id": "SonarQube.FindingsFilterActive",
+        "label": "Filter Findings",
+        "icon": "$(filter-filled)"
       }
     ]
   },

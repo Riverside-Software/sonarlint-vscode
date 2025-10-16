@@ -272,6 +272,7 @@ export interface Issue {
   textRange: TextRange;
   codeMatches?: boolean;
   shouldOpenRuleDescription: boolean;
+  isHotspot: boolean;
 }
 
 export namespace ShowIssueOrHotspotNotification {
@@ -839,6 +840,20 @@ export interface EndProgressNotificationParams {
 }
 
 
+export enum ImpactSeverity {
+  INFO,
+  LOW,
+  MEDIUM,
+  HIGH,
+  BLOCKER
+}
 
+export namespace FindingsFilteredNotification {
+  export const type = new lsp.NotificationType<FindingsFilteredParams>('sonarlint/findingsFiltered');
+}
+
+export interface FindingsFilteredParams {
+  filterType: string;
+}
 
 //#endregion

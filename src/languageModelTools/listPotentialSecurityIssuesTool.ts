@@ -55,12 +55,21 @@ export class ListPotentialSecurityIssuesTool implements vscode.LanguageModelTool
         new vscode.LanguageModelTextPart('I have initiated the binding process for you.'),
       ]);
     }
-    const hotspotsAndTaintsInFile: FindingNode[] = FindingsTreeDataProvider.instance.getHotspotsAndTaintsForFile(fileUri.toString());
 
-    for (const h of hotspotsAndTaintsInFile) {
+    const hotspotInFile: FindingNode[] = FindingsTreeDataProvider.instance.getHotspotsForFile(fileUri.toString());
+    const taintsInFile: FindingNode[] = FindingsTreeDataProvider.instance.getTaintVulnerabilitiesForFile(fileUri.toString());
+
+    for (const h of hotspotInFile) {
       results.push(
         new vscode.LanguageModelTextPart(
           `There is a potential security issue with message ${h.message} on line ${h.range.start.line + 1}` // vscode line positions are 0-based
+        )
+      );
+    }
+    for (const t of taintsInFile) {
+      results.push(
+        new vscode.LanguageModelTextPart(
+          `There is a vulnerability with message ${t.message} on line ${t.range.start.line + 1}` // vscode line positions are 0-based
         )
       );
     }
@@ -68,7 +77,7 @@ export class ListPotentialSecurityIssuesTool implements vscode.LanguageModelTool
     this.client.lmToolCalled(`lm_${ListPotentialSecurityIssuesTool.toolName}`, true);
     return new vscode.LanguageModelToolResult([
       new vscode.LanguageModelTextPart(
-        `There are ${hotspotsAndTaintsInFile.length} potential security issues in the active file:`
+        `There are ${hotspotInFile.length} potential security issues and ${taintsInFile.length} vulnerabilities in the active file:`
       ),
       ...results
     ]);
@@ -79,14 +88,14 @@ export class ListPotentialSecurityIssuesTool implements vscode.LanguageModelTool
     _token: vscode.CancellationToken
   ) {
     const confirmationMessages = {
-      title: 'Retrieve detected Security Hotspots for a file',
+      title: 'Retrieve detected Security Hotspots and Taint Vulnerabilities for a file',
       message: new vscode.MarkdownString(
-        `Retrieve the detected Security Hotspots for the file **${options.input.filePath}**?`
+        `Retrieve the detected Security Hotspots and Taint Vulnerabilities for the file **${options.input.filePath}**?`
       )
     };
 
     return {
-      invocationMessage: 'Fetching Security Hotspots for the file...',
+      invocationMessage: 'Fetching Security Hotspots and Taint Vulnerabilities for the file...',
       confirmationMessages
     };
   }
