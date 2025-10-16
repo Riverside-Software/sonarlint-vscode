@@ -30,6 +30,7 @@ import {
   HelpAndFeedbackLink,
   HelpAndFeedbackTreeDataProvider
 } from './help/helpAndFeedbackTreeDataProvider';
+import { AIAgentsConfigurationTreeDataProvider, AIAgentsConfigurationItem } from './aiAgentsConfiguration/aiAgentsConfigurationTreeDataProvider';
 import {
   changeHotspotStatus,
   getFilesForHotspotsAndLaunchScan,
@@ -83,6 +84,8 @@ import { helpAndFeedbackLinkClicked } from './help/linkTelemetry';
 import { FindingNode } from './findings/findingTypes/findingNode';
 import { AutomaticAnalysisService } from './settings/automaticAnalysis';
 import { FlightRecorderService } from './monitoring/flightrecorder';
+import { configureMCPServer, onEmbeddedServerStarted, openMCPServerConfigurationFile } from './aiAgentsConfiguration/mcpServerConfig';
+import { introduceSonarQubeRulesFile, openSonarQubeRulesFile } from './aiAgentsConfiguration/aiAgentRuleConfig';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -106,6 +109,8 @@ let findingsTreeDataProvider: FindingsTreeDataProvider;
 let findingsView: VSCode.TreeView<FindingsTreeViewItem>;
 let helpAndFeedbackTreeDataProvider: HelpAndFeedbackTreeDataProvider;
 let helpAndFeedbackView: VSCode.TreeView<HelpAndFeedbackLink>;
+let aiAgentsConfigurationTreeDataProvider: AIAgentsConfigurationTreeDataProvider;
+let aiAgentsConfigurationView: VSCode.TreeView<AIAgentsConfigurationItem>;
 const currentProgress: Record<string, { progress: VSCode.Progress<{ increment?: number }>, resolve: () => void } | undefined> = {};
 
 async function runJavaServer(context: VSCode.ExtensionContext): Promise<StreamInfo> {
@@ -248,7 +253,7 @@ export async function activate(context: VSCode.ExtensionContext) {
     /* ignored */
   });
   FixSuggestionService.init(languageClient);
-  ContextManager.instance.setConnectedModeContext(context);
+  ContextManager.instance.initializeContext(context);
 
   FindingsTreeDataProvider.init(context, languageClient);
   findingsTreeDataProvider = FindingsTreeDataProvider.instance;
@@ -338,7 +343,7 @@ export async function activate(context: VSCode.ExtensionContext) {
     }
     if (event.affectsConfiguration('sonarlint-abl.connectedMode')) {
       allConnectionsTreeDataProvider.refresh();
-      ContextManager.instance.setConnectedModeContext(context);
+      ContextManager.instance.initializeContext(context);
     }
     if (event.affectsConfiguration('sonarlint-abl.focusOnNewCode')) {
       NewCodeDefinitionService.instance.updateFocusOnNewCodeState();
@@ -362,7 +367,7 @@ export async function activate(context: VSCode.ExtensionContext) {
     for (const added of event.added) {
       FileSystemServiceImpl.instance.didAddWorkspaceFolder(added);
     }
-  })
+  });
 
   registerCommands(context);
 
@@ -387,6 +392,12 @@ export async function activate(context: VSCode.ExtensionContext) {
     treeDataProvider: helpAndFeedbackTreeDataProvider
   });
   context.subscriptions.push(helpAndFeedbackView);
+
+  aiAgentsConfigurationTreeDataProvider = new AIAgentsConfigurationTreeDataProvider();
+  aiAgentsConfigurationView = VSCode.window.createTreeView('SonarLint.AIAgentsConfiguration', {
+    treeDataProvider: aiAgentsConfigurationTreeDataProvider
+  });
+  context.subscriptions.push(aiAgentsConfigurationView);
 
   TaintVulnerabilityDecorator.init();
 
@@ -645,6 +656,35 @@ function registerCommands(context: VSCode.ExtensionContext) {
   context.subscriptions.push(VSCode.commands.registerCommand(Commands.DUMP_BACKEND_THREADS, () => {
     languageClient.dumpThreads();
   }));
+
+  context.subscriptions.push(
+    VSCode.commands.registerCommand(Commands.CONFIGURE_MCP_SERVER, (connection) => {
+      configureMCPServer(languageClient, allConnectionsTreeDataProvider, connection);
+      aiAgentsConfigurationTreeDataProvider.refresh();
+    })
+  );
+
+  context.subscriptions.push(
+    VSCode.commands.registerCommand(Commands.OPEN_MCP_SERVER_CONFIGURATION, () => openMCPServerConfigurationFile())
+  );
+
+  context.subscriptions.push(
+    VSCode.commands.registerCommand(Commands.REFRESH_AI_AGENTS_CONFIGURATION, () => aiAgentsConfigurationTreeDataProvider.refresh())
+  );
+
+  context.subscriptions.push(
+    VSCode.commands.registerCommand(Commands.OPEN_AIAGENTS_CONFIGURATION_DOC, () => {
+      VSCode.commands.executeCommand(Commands.TRIGGER_HELP_AND_FEEDBACK_LINK, 'aiAgentsConfigurationDoc');
+    })
+  );
+
+  context.subscriptions.push(
+    VSCode.commands.registerCommand(Commands.OPEN_SONARQUBE_RULES_FILE, () => openSonarQubeRulesFile())
+  );
+
+  context.subscriptions.push(
+    VSCode.commands.registerCommand(Commands.INTRODUCE_SONARQUBE_RULES_FILE, () => introduceSonarQubeRulesFile(languageClient))
+  );
 }
 
 async function scanFolderForHotspotsCommandHandler(folderUri: VSCode.Uri) {
@@ -756,6 +796,9 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
   });
   languageClient.onNotification(ExtendedClient.FlightRecorderStartedNotification.type, (params) => {
     FlightRecorderService.instance.onFlightRecorderStarted(params.sessionId);
+  });
+  languageClient.onNotification(ExtendedClient.EmbeddedServerStartedNotification.type, (params) => {
+    onEmbeddedServerStarted(params.port);
   });
 }
 

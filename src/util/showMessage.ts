@@ -38,7 +38,7 @@ export async function tooManyFilesConfirmation(filesCount: number): Promise<Hots
   return vscode.window.showWarningMessage(
     `There are ${filesCount} files to analyze for hotspots in project. 
         Analysis may consume too many resources. Do you want to proceed?\n 
-        [Server analysis recommended](https://docs.sonarsource.com/sonarqube-server/latest/analyzing-source-code/overview/)`,
+        [Server analysis recommended](https://docs.sonarsource.com/sonarqube-server/analyzing-source-code/overview/)`,
     HotspotAnalysisConfirmation.RUN_ANALYSIS, HotspotAnalysisConfirmation.DONT_ANALYZE
   );
 }
@@ -101,7 +101,7 @@ export function showNoFileWithUriError(uri: vscode.Uri) {
   )
   .then(action => {
     if (action === 'Show Documentation') {
-      vscode.commands.executeCommand(Commands.OPEN_BROWSER, vscode.Uri.parse('https://docs.sonarsource.com/sonarqube-for-ide/vs-code/troubleshooting/#no-matching-issue-found'));
+      vscode.commands.executeCommand(Commands.OPEN_BROWSER, vscode.Uri.parse('https://docs.sonarsource.com/sonarqube-for-vs-code/troubleshooting/#no-matching-issue-found'));
     }
   });
 }

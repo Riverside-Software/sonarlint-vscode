@@ -47,7 +47,7 @@ export const helpAndFeedbackItems: HelpAndFeedbackItem[] = [
   },
   {
     id: 'connectedModeDocs',
-    url: 'https://docs.sonarsource.com/sonarqube-for-ide/vs-code/team-features/connected-mode/',
+    url: 'https://docs.sonarsource.com/sonarqube-for-vs-code/team-features/connected-mode/',
     viewItem: false
   },
   {
@@ -60,4 +60,9 @@ export const helpAndFeedbackItems: HelpAndFeedbackItem[] = [
     url: 'https://www.sonarsource.com/products/sonarqube/downloads/',
     viewItem: false
   },
+  {
+    id: 'aiAgentsConfigurationDoc',
+    url: 'https://docs.sonarsource.com/sonarqube-for-vs-code/ai-capabilities/agents#sonarqube-mcp-server',
+    viewItem: false
+  }
 ];

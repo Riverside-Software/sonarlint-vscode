@@ -49,6 +49,12 @@ export namespace Commands {
   export const EDIT_SONARCLOUD_CONNECTION = 'SonarLint.ABL.EditSonarCloudConnection';
   export const SHARE_CONNECTED_MODE_CONFIG = "SonarLint.ABL.ShareConnectedModeConfiguration";
   export const REMOVE_CONNECTION = 'SonarLint.ABL.RemoveConnection';
+  export const CONFIGURE_MCP_SERVER = 'SonarLint.ABL.ConfigureMCPServer';
+  export const OPEN_MCP_SERVER_CONFIGURATION = 'SonarLint.ABL.OpenMCPServerConfiguration';
+  export const INTRODUCE_SONARQUBE_RULES_FILE = 'SonarLint.ABL.IntroduceSonarQubeRulesFile';
+  export const OPEN_SONARQUBE_RULES_FILE = 'SonarLint.ABL.OpenSonarQubeRulesFile';
+  export const REFRESH_AI_AGENTS_CONFIGURATION = 'SonarLint.ABL.RefreshAIAgentsConfiguration';
+  export const OPEN_AIAGENTS_CONFIGURATION_DOC = 'SonarLint.ABL.OpenAIAgentsConfigurationDoc';
 
   export const ADD_PROJECT_BINDING = 'SonarLint.ABL.AddProjectBinding';
   export const EDIT_PROJECT_BINDING = 'SonarLint.ABL.EditProjectBinding';

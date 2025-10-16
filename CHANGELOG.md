@@ -1,3 +1,13 @@
+## 4.32
+
+* Update JS/TS/CSS analyzer 11.3 -> [11.4](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2022537%20ORDER%20BY%20created%20ASC) -> [11.4.1](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2023259%20ORDER%20BY%20created%20ASC), Update Node.js min required versions to "^20.12.0 || >=22.11.0"
+* Update IaC analyzer 1.49 -> [1.50](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2022306%20ORDER%20BY%20created%20ASC)
+* Update Go analyzer 1.27 -> 1.28
+* Update Text & Secrets analyzer 2.28 -> 2.29 -> 2.30
+* Update Python analyzer 5.9 -> 5.10 -> 5.11
+* Update CFamily analyzer 6.71 -> [6.72](https://sonarsource.atlassian.net/issues/?jql=project%20=%2010166%20AND%20fixVersion=22307%20ORDER%20BY%20priority%20DESC,%20key%20ASC) -> [6.73](https://sonarsource.atlassian.net/issues/?jql=project%20%3D%2010166%20AND%20fixVersion%3D23027%20ORDER%20BY%20priority%20DESC%2C%20key%20ASC)
+* Update Java analyzer 8.18 -> [8.19](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2021806%20ORDER%20BY%20created%20ASC)
+
 ## 4.31
 
 * SonarQube Cloud US region is now generally available
@@ -310,7 +320,7 @@
 
 ## 4.0.1
 
-* Initial support for C# analysis. More info in [docs](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/getting-started/requirements/#c-sharp-analysis); Please share feedback on our [Community Forum](https://community.sonarsource.com/c/sl/vs-code/36).
+* Initial support for C# analysis. More info in [docs](https://docs.sonarsource.com/sonarqube-for-vs-code/getting-started/requirements/#c-sharp-analysis); Please share feedback on our [Community Forum](https://community.sonarsource.com/c/sl/vs-code/36).
 * Update Python analyzer 4.8 -> [4.9](https://sonarsource.atlassian.net/projects/SONARPY/versions/14308/tab/release-report-all-issues), 5 new rules for Pandas library
 * Update JS/TS/CSS analyzer 10.6.0 -> [10.7.0](https://github.com/SonarSource/SonarJS/releases/tag/10.7.0.22914) -> [10.8.0](https://github.com/SonarSource/SonarJS/releases/tag/10.8.0.24207), new rules, FP fixes, improved diagnostics for memory issues
 * Update Java analyzer 7.25 -> [7.26](https://github.com/SonarSource/sonar-java/releases/tag/7.26.0.33315) -> [7.27](https://github.com/SonarSource/sonar-java/releases/tag/7.27.0.33463) -> [7.27.1](https://github.com/SonarSource/sonar-java/releases/tag/7.27.1.33504), Add first part of support in rules for jakarta packages, 6 new Spring rules, bugfix and improvements
@@ -324,8 +334,8 @@
 
 ## 3.22
 
-* Add possibility to exclude files from analysis when ***not*** in Connected Mode. [Learn more](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/file-exclusions)
-* Add focusing on new code in connected mode [Learn more](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/investigating-issues/#focusing-on-new-code)
+* Add possibility to exclude files from analysis when ***not*** in Connected Mode. [Learn more](https://docs.sonarsource.com/sonarqube-for-vs-code/using/file-exclusions)
+* Add focusing on new code in connected mode [Learn more](https://docs.sonarsource.com/sonarqube-for-vs-code/using/investigating-issues/#focusing-on-new-code)
 * Update JS/TS/CSS analyzer 10.5.1 -> [10.6.0](https://github.com/SonarSource/SonarJS/releases/tag/10.6.0.22520), FP fixes, QuickFix for S6326, remove S2814 for TypeScript, recommendation to use Node.js 20
 * Update CFamily analyzer 6.48 -> [6.49](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2014261%20ORDER%20BY%20created%20ASC), 2 new C++ MISRA 2023 rules
 * Update text and secrets analyzer 2.3.0 -> [2.4.0](https://github.com/SonarSource/sonar-text/releases/tag/2.4.0.2120) -> [2.5.0](https://github.com/SonarSource/sonar-text/releases/tag/2.5.0.2293), 42 new cloud app secrets, FP fixes, analysis time logging
@@ -425,7 +435,7 @@
 
 ## 3.14
 
-* Local detection of [Security Hotspots](https://docs.sonarsource.com/sonarqube-for-ide/vs-code/using/security-hotspots/)
+* Local detection of [Security Hotspots](https://docs.sonarsource.com/sonarqube-for-vs-code/using/security-hotspots/)
 * Update PHP analyzer 3.25.0 -> [3.26.0](https://github.com/SonarSource/sonar-php/releases/tag/3.26.0.9313) -> [3.27.0](https://github.com/SonarSource/sonar-php/releases/tag/3.27.0.9339) -> [3.27.1](https://github.com/SonarSource/sonar-php/releases/tag/3.27.1.9352), Fix parsing error on namespaces with reserved words
 * Update CFamily analyzer 6.40.0 -> [6.41.0](https://sonarsource.atlassian.net/issues/?jql=project%20%3D%2010166%20AND%20fixVersion%20%3D%2013953%20ORDER%20BY%20priority%20DESC%2C%20key%20ASC), 13 new rules on C++20's "std::format"
 * Update Java analyzer 7.15.0 -> [7.16.0](https://sonarsource.atlassian.net/projects/SONARJAVA/versions/13922/tab/release-report-all-issues), FP fixes, bugfixes, FN fixes

@@ -26,7 +26,7 @@ import { shouldShowRegionSelection } from '../settings/settings';
 
 let connectionSetupPanel: vscode.WebviewPanel;
 
-const sonarQubeNotificationsDocUrl = 'https://docs.sonarsource.com/sonarqube-server/latest/user-guide/connected-mode/';
+const sonarQubeNotificationsDocUrl = 'https://docs.sonarsource.com/sonarqube-server/user-guide/connected-mode/';
 const sonarCloudNotificationsDocUrl =
   'https://docs.sonarsource.com/sonarqube-cloud/improving/connected-mode/#smart-notifications';
 const TOKEN_RECEIVED_COMMAND = 'tokenReceived';
@@ -263,7 +263,7 @@ function renderConnectionSetupPanel(context: vscode.ExtensionContext, webview: v
         </vscode-checkbox>
         <input type="hidden" id="enableNotifications-initial" value="${!connection.disableNotifications}" />
         ${maybeFolderBindingParagraph}
-        <a href='https://docs.sonarsource.com/sonarqube-for-ide/vs-code/team-features/connected-mode-setup/#connection-setup'>Need help setting up a connection?</a>
+        <a href='https://docs.sonarsource.com/sonarqube-for-vs-code/team-features/connected-mode-setup/#connection-setup'>Need help setting up a connection?</a>
         <div id="connectionCheck" class="formRowWithStatus">
           <vscode-button id="saveConnection" disabled>${saveButtonLabel}</vscode-button>
           <span id="connectionProgress" class="hidden">

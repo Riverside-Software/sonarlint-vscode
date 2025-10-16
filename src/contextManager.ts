@@ -11,12 +11,16 @@ import { BindingService } from './connected/binding';
 import { allFalse, allTrue } from './rules/rules';
 import { ConnectionSettingsService } from './settings/connectionsettings';
 import { HAS_CLICKED_GET_STARTED_LINK } from './commons'
+import { getCurrentIdeWithMCPSupport } from './aiAgentsConfiguration/aiAgentUtils';
 
 const SOME_CONNECTED_MODE_CONTEXT_KEY = 'sonarlint-abl.someFoldersUseConnectedMode';
 const SOME_STANDALONE_MODE_CONTEXT_KEY = 'sonarlint-abl.someFoldersUseStandaloneMode';
 const HAS_EXPLORED_ISSUE_LOCATIONS_CONTEXT_KEY = 'sonarlint-abl.hasExploredIssueLocations';
 const SHOULD_SHOW_GET_STARTED_VIEW = 'sonarlint-abl.shouldShowGetStartedView';
 const FLIGHT_RECORDER_RUNNING = 'sonarlint-abl.flightRecorderRunning';
+const MCP_SERVER_SUPPORTED_IDE = 'sonarlint-abl.mcpServerSupportedIDE';
+
+const COPILOT_ACTIVATION_DELAY_MS = 10000;
 
 export class ContextManager {
   private static _instance: ContextManager;
@@ -28,7 +32,7 @@ export class ContextManager {
     return ContextManager._instance;
   }
 
-  setConnectedModeContext(context: vscode.ExtensionContext) {
+  initializeContext(context: vscode.ExtensionContext) {
     this.setGetStartedViewContext(context);
     const folderBindingStates = [...BindingService.instance.bindingStatePerFolder().values()];
     if (allTrue(folderBindingStates)) {
@@ -44,6 +48,15 @@ export class ContextManager {
       vscode.commands.executeCommand('setContext', SOME_CONNECTED_MODE_CONTEXT_KEY, true);
       vscode.commands.executeCommand('setContext', SOME_STANDALONE_MODE_CONTEXT_KEY, true);
     }
+
+    setTimeout(() => {
+      this.setMCPServerSupportedIDEContext();
+    }, COPILOT_ACTIVATION_DELAY_MS);
+  }
+
+  setMCPServerSupportedIDEContext() {
+    const isSupportedIDE = getCurrentIdeWithMCPSupport() !== undefined;
+    vscode.commands.executeCommand('setContext', MCP_SERVER_SUPPORTED_IDE, isSupportedIDE);
   }
 
   setIssueLocationsContext() {
@@ -67,6 +80,7 @@ export class ContextManager {
     vscode.commands.executeCommand('setContext', HAS_EXPLORED_ISSUE_LOCATIONS_CONTEXT_KEY, undefined);
     vscode.commands.executeCommand('setContext', SHOULD_SHOW_GET_STARTED_VIEW, undefined);
     vscode.commands.executeCommand('setContext', FLIGHT_RECORDER_RUNNING, undefined);
+    vscode.commands.executeCommand('setContext', MCP_SERVER_SUPPORTED_IDE, undefined);
   }
 
 }
