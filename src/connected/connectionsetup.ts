@@ -160,7 +160,7 @@ export async function handleInvalidTokenNotification(connectionId: string) {
     } else if (isSonarCloud) {
       vscode.commands.executeCommand(Commands.EDIT_SONARCLOUD_CONNECTION, connectionId);
     }
-    vscode.commands.executeCommand('SonarLint.ConnectedMode.focus');
+    vscode.commands.executeCommand('sonarlint-abl.ConnectedMode.focus');
   }
 }
 

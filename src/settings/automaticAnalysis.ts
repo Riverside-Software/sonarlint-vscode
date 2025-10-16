@@ -16,13 +16,13 @@ export class AutomaticAnalysisService {
   }  
 
   updateAutomaticAnalysisStatusBarAndFindingsViewMessage() {
-    const isEnabled = vscode.workspace.getConfiguration('sonarlint').get('automaticAnalysis', true);
+    const isEnabled = vscode.workspace.getConfiguration('sonarlint-abl').get('automaticAnalysis', true);
     const icon = isEnabled ? '$(circle-filled)' : '$(circle-outline)';
     const status = isEnabled ? 'enabled' : 'disabled';
     const action = isEnabled ? 'disable' : 'enable';
-    const command = isEnabled ? 'SonarLint.AutomaticAnalysis.Disable' : 'SonarLint.AutomaticAnalysis.Enable';
+    const command = isEnabled ? 'SonarLint.ABL.AutomaticAnalysis.Disable' : 'SonarLint.ABL.AutomaticAnalysis.Enable';
     
-    this.statusBarItem.text = `${icon} SonarQube`;
+    this.statusBarItem.text = `${icon} CABL`;
     this.statusBarItem.tooltip = `Automatic analysis is ${status}. Click to ${action}.`;
     this.statusBarItem.command = command;
     

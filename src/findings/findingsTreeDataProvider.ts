@@ -77,14 +77,14 @@ export class FindingsTreeDataProvider implements vscode.TreeDataProvider<Finding
     context.subscriptions.push(
       vscode.commands.registerCommand(Commands.TRIGGER_BROWSE_TAINT_COMMAND, (finding: FindingNode) => {
         // call server-side command to open the taint vulnerability on the remote server
-        vscode.commands.executeCommand('SonarLint.BrowseTaintVulnerability', finding.serverIssueKey, finding.fileUri);
+        vscode.commands.executeCommand('SonarLint.ABL.BrowseTaintVulnerability', finding.serverIssueKey, finding.fileUri);
       })
     );
 
     context.subscriptions.push(
       vscode.commands.registerCommand(Commands.TRIGGER_AI_CODE_FIX_COMMAND, (finding: FindingNode) => {
         // call server-side command to to suggest fix
-        vscode.commands.executeCommand('SonarLint.SuggestFix', finding.key, finding.fileUri);
+        vscode.commands.executeCommand('SonarLint.ABL.SuggestFix', finding.key, finding.fileUri);
       })
     );
 
@@ -107,7 +107,7 @@ export class FindingsTreeDataProvider implements vscode.TreeDataProvider<Finding
           finding.range,
           vscode.CodeActionKind.QuickFix.value
         );
-        const codeActionsFromSonarQube = codeActions.filter(action => action.title.startsWith('SonarQube: '));
+        const codeActionsFromSonarQube = codeActions.filter(action => action.title.startsWith('CABL: '));
         await selectAndApplyCodeAction(codeActionsFromSonarQube);
       })
     );
@@ -149,7 +149,7 @@ export class FindingsTreeDataProvider implements vscode.TreeDataProvider<Finding
     );
 
     // Initialize the context for the filter
-    vscode.commands.executeCommand('setContext', 'sonarqube.findingsFilter', getFilterContextValue(this._instance.activeFilter));
+    vscode.commands.executeCommand('setContext', 'sonarqube-abl.findingsFilter', getFilterContextValue(this._instance.activeFilter));
   }
 
   static get instance(): FindingsTreeDataProvider {
@@ -162,14 +162,14 @@ export class FindingsTreeDataProvider implements vscode.TreeDataProvider<Finding
       const showRuleDescriptionCommand = finding.contextValue === 'newHotspotItem' ? Commands.SHOW_HOTSPOT_RULE_DESCRIPTION : Commands.SHOW_HOTSPOT_DETAILS;
       vscode.commands.executeCommand(showRuleDescriptionCommand, finding);
     } else if (finding.findingType === FindingType.TaintVulnerability) {
-      vscode.commands.executeCommand('SonarLint.ShowTaintVulnerabilityFlows', finding.serverIssueKey, getConnectionIdForFile(finding.fileUri));
-      vscode.commands.executeCommand('SonarLint.ShowIssueDetailsCodeAction', finding.key, finding.fileUri);
+      vscode.commands.executeCommand('SonarLint.ABL.ShowTaintVulnerabilityFlows', finding.serverIssueKey, getConnectionIdForFile(finding.fileUri));
+      vscode.commands.executeCommand('SonarLint.ABL.ShowIssueDetailsCodeAction', finding.key, finding.fileUri);
     } else if (finding.findingType === FindingType.Issue) {
       if (!(finding instanceof NotebookFindingNode)) {
         // showing all locations for notebook cells is not supported
-        vscode.commands.executeCommand('SonarLint.ShowIssueFlows', finding.key, finding.fileUri);
+        vscode.commands.executeCommand('SonarLint.ABL.ShowIssueFlows', finding.key, finding.fileUri);
       }
-      vscode.commands.executeCommand('SonarLint.ShowIssueDetailsCodeAction', finding.key, finding.fileUri);
+      vscode.commands.executeCommand('SonarLint.ABL.ShowIssueDetailsCodeAction', finding.key, finding.fileUri);
     } else if (finding.findingType === FindingType.DependencyRisk) {
       this.client.dependencyRiskInvestigatedLocally();
       this.client.openDependencyRiskInBrowser(finding.fileUri, finding.key);
@@ -432,7 +432,7 @@ export class FindingsTreeDataProvider implements vscode.TreeDataProvider<Finding
   setFilter(filter: FilterType) {
     this.activeFilter = filter;
     this.refresh();
-    vscode.commands.executeCommand('setContext', 'sonarqube.findingsFilter', getFilterContextValue(filter));
+    vscode.commands.executeCommand('setContext', 'sonarqube-abl.findingsFilter', getFilterContextValue(filter));
     this.client.findingsFiltered(filter);
   }
 

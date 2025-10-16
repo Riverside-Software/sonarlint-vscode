@@ -288,7 +288,7 @@ export class BindingService {
     }
 
     // Focus on the Findings view
-    VSCode.commands.executeCommand('SonarQube.Findings.focus');
+    VSCode.commands.executeCommand('sonarqube-abl.Findings.focus');
   }
 
   private async proposeSharingConfig(projectKey: string, workspaceFolder: VSCode.WorkspaceFolder) {

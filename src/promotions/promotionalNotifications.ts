@@ -30,7 +30,7 @@ export async function maybeShowWiderLanguageSupportNotification(context: vscode.
     if (selection === dontShowAgainAction) {
       context.globalState.update(CAN_SHOW_PROMO_NOTIFICATIONS_KEY, false);
     } else if (selection === learnMoreAction) {
-      vscode.commands.executeCommand('SonarLint.ABL.ConnectedMode.focus');
+      vscode.commands.executeCommand('sonarlint-abl.ConnectedMode.focus');
     }
 
     context.globalState.update(LAST_SHOWED_PROMO_NOTIFICATION_MILLI, Date.now());

@@ -80,7 +80,7 @@ export async function openSonarQubeRulesFile(): Promise<void> {
       );
 
       if (action === 'Create Rules File') {
-        vscode.commands.executeCommand('SonarLint.IntroduceSonarQubeRulesFile');
+        vscode.commands.executeCommand('SonarLint.AI.IntroduceSonarQubeRulesFile');
       }
     }
   } catch (error) {

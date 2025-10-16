@@ -203,7 +203,7 @@ function warnNoConnectionConfigured() {
     )
     .then(action => {
       if (action === 'Set up Connection') {
-        vscode.commands.executeCommand('SonarLint.ConnectedMode.focus');
+        vscode.commands.executeCommand('sonarlint-abl.ConnectedMode.focus');
       }
     });
 }

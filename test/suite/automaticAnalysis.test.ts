@@ -36,14 +36,14 @@ suite('AutomaticAnalysisService Test Suite', () => {
     automaticAnalysisService = new AutomaticAnalysisService(statusBarItem, findingsView);
     
     await vscode.workspace
-      .getConfiguration('sonarlint')
+      .getConfiguration('sonarlint-abl')
       .update('automaticAnalysis', undefined, vscode.ConfigurationTarget.Global);
   });
 
   teardown(async () => {
     statusBarItem.dispose();
     await vscode.workspace
-      .getConfiguration('sonarlint')
+      .getConfiguration('sonarlint-abl')
       .update('automaticAnalysis', undefined, vscode.ConfigurationTarget.Global);
   });
 
@@ -53,7 +53,7 @@ suite('AutomaticAnalysisService Test Suite', () => {
 
     expect(statusBarItem.text).to.equal('$(circle-filled) SonarQube');
     expect(statusBarItem.tooltip).to.equal('Automatic analysis is enabled. Click to disable.');
-    expect(statusBarItem.command).to.equal('SonarLint.AutomaticAnalysis.Disable');
+    expect(statusBarItem.command).to.equal('SonarLint.ABL.AutomaticAnalysis.Disable');
     expect(findingsView.message).to.be.undefined;
   });
 
@@ -77,13 +77,13 @@ suite('AutomaticAnalysisService Test Suite', () => {
     expect(findingsView.message).to.be.undefined;
     expect(statusBarItem.text).to.equal('$(circle-filled) SonarQube');
     expect(statusBarItem.tooltip).to.equal('Automatic analysis is enabled. Click to disable.');
-    expect(statusBarItem.command).to.equal('SonarLint.AutomaticAnalysis.Disable');
+    expect(statusBarItem.command).to.equal('SonarLint.ABL.AutomaticAnalysis.Disable');
   });
 
   test('should set findings view message and update status bar when analysis is disabled', async () => {
     // Start with enabled (no message)
     await vscode.workspace
-      .getConfiguration('sonarlint')
+      .getConfiguration('sonarlint-abl')
       .update('automaticAnalysis', true, vscode.ConfigurationTarget.Global);
     
     automaticAnalysisService.updateAutomaticAnalysisStatusBarAndFindingsViewMessage();
@@ -91,7 +91,7 @@ suite('AutomaticAnalysisService Test Suite', () => {
 
     // Change to disabled
     await vscode.workspace
-      .getConfiguration('sonarlint')
+      .getConfiguration('sonarlint-abl')
       .update('automaticAnalysis', false, vscode.ConfigurationTarget.Global);
     
     automaticAnalysisService.updateAutomaticAnalysisStatusBarAndFindingsViewMessage();
@@ -99,6 +99,6 @@ suite('AutomaticAnalysisService Test Suite', () => {
     expect(findingsView.message).to.equal('ⓘ Automatic analysis is disabled. The findings list might not be up to date.');
     expect(statusBarItem.text).to.equal('$(circle-outline) SonarQube');
     expect(statusBarItem.tooltip).to.equal('Automatic analysis is disabled. Click to enable.');
-    expect(statusBarItem.command).to.equal('SonarLint.AutomaticAnalysis.Enable');
+    expect(statusBarItem.command).to.equal('SonarLint.ABL.AutomaticAnalysis.Enable');
   });
 });
