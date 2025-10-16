@@ -1,3 +1,13 @@
+## 4.29
+
+* Enable analysis of GitHub Actions workflow files in Connected Mode
+* Enable [text analysis](https://rules.sonarsource.com/text/) in Connected Mode
+* Remove dead `showAnalyzerLogs` setting
+* Update PHP analyzer 3.46 -> [3.47](https://sonarsource.atlassian.net/issues/?jql=fixversion%20%3D%203.47%20ORDER%20BY%20created%20ASC) -> [3.48](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2022080%20ORDER%20BY%20created%20ASC)
+* Update Text & Secrets analyzer 2.26 -> 2.27
+* Update Python analyzer 5.7 -> 5.8
+* Update IaC analyzer 1.48 -> [1.49](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2021830%20ORDER%20BY%20created%20ASC)
+
 ## 4.28
 
 * Improve accuracy of automatic binding suggestions

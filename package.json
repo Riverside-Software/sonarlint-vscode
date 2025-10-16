@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Advanced linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.28.99001",
+  "version": "4.29.99001",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -228,13 +228,6 @@
           "type": "boolean",
           "default": false,
           "description": "Enable verbose log level in the CABL output.",
-          "scope": "window"
-        },
-        "sonarlint-abl.output.showAnalyzerLogs": {
-          "order": 91,
-          "type": "boolean",
-          "default": false,
-          "description": "Show analyzer's logs in the CABL output.",
           "scope": "window"
         },
         "sonarlint-abl.analyzerProperties": {
