@@ -13,9 +13,9 @@
   * Publisher changed from `SonarSource` to `RiversideSoftware`
   * Extension Id changed from `sonarlint-vscode` to `sonarlint-abl`
   * Settings prefix changed from `sonarlint` to `sonarlint-abl`
-  * Commands prefix changed from `SonarLint.` to `SonarLint.ABL.`
+  * Commands prefix changed from `SonarLint.` to `SonarLint.ABL.` and from `SonarQube.` to `SonarQube.ABL`.
   * Commands category changed from `SonarQube` to `CABL`
-  * View name changed from `SonarLint` to `sonarlint-abl`
+  * View name changed from `SonarLint.` to `sonarlint-abl.` and from `SonarQube.` to `sonarqube-abl.`
   * Remove walkthrough section
 
 * Somewhere else:
