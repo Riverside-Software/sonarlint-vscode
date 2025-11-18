@@ -55,7 +55,7 @@ export class ContextManager {
   }
 
   setMCPServerSupportedIDEContext() {
-    const isSupportedIDE = false; // getCurrentIdeWithMCPSupport() !== undefined;
+    const isSupportedIDE = getCurrentIdeWithMCPSupport() !== undefined;
     vscode.commands.executeCommand('setContext', MCP_SERVER_SUPPORTED_IDE, isSupportedIDE);
   }
 
