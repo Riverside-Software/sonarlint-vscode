@@ -19,7 +19,7 @@ const SOME_STANDALONE_MODE_CONTEXT_KEY = 'sonarlint-abl.someFoldersUseStandalone
 const HAS_EXPLORED_ISSUE_LOCATIONS_CONTEXT_KEY = 'sonarlint-abl.hasExploredIssueLocations';
 const SHOULD_SHOW_GET_STARTED_VIEW = 'sonarlint-abl.shouldShowGetStartedView';
 const FLIGHT_RECORDER_RUNNING = 'sonarqube-abl.flightRecorderRunning';
-const MCP_SERVER_SUPPORTED_IDE = 'sonarqube-abl.mcpServerSupportedAgent';
+const MCP_SERVER_SUPPORTED_AGENT = 'sonarqube-abl.mcpServerSupportedAgent';
 const IDE_LABS_ENABLED_FLAG_KEY = 'sonarqube-abl.ideLabsEnabled';
 const COPILOT_ACTIVATION_DELAY_MS = 10000;
 
