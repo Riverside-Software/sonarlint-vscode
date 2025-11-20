@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------------------------
  * SonarLint for VisualStudio Code
- * Copyright (C) 2017-2025 SonarSource SA
+ * Copyright (C) 2017-2025 SonarSource Sàrl
  * sonarlint@sonarsource.com
  * Licensed under the LGPLv3 License. See LICENSE.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
@@ -60,7 +60,7 @@ suite('util', () => {
     expect(startedInDebugMode(process)).to.be.false;
   });
 
-  test('should recognize build running on cirrus-ci pipelines', () => {
+  test('should recognize build running on ci pipelines', () => {
     process.env.NODE_ENV = 'continuous-integration';
     expect(isRunningAutoBuild()).to.be.true;
   });

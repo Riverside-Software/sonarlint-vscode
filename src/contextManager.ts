@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------------------------
  * SonarLint for VisualStudio Code
- * Copyright (C) 2017-2025 SonarSource SA
+ * Copyright (C) 2017-2025 SonarSource Sàrl
  * sonarlint@sonarsource.com
  * Licensed under the LGPLv3 License. See LICENSE.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
@@ -11,7 +11,7 @@ import { BindingService } from './connected/binding';
 import { allFalse, allTrue } from './rules/rules';
 import { ConnectionSettingsService } from './settings/connectionsettings';
 import { HAS_CLICKED_GET_STARTED_LINK } from './commons'
-import { getCurrentIdeWithMCPSupport } from './aiAgentsConfiguration/aiAgentUtils';
+import { getCurrentAgentWithMCPSupport } from './aiAgentsConfiguration/aiAgentUtils';
 import { IdeLabsFlagManagementService } from './labs/ideLabsFlagManagementService';
 
 const SOME_CONNECTED_MODE_CONTEXT_KEY = 'sonarlint-abl.someFoldersUseConnectedMode';
@@ -19,7 +19,7 @@ const SOME_STANDALONE_MODE_CONTEXT_KEY = 'sonarlint-abl.someFoldersUseStandalone
 const HAS_EXPLORED_ISSUE_LOCATIONS_CONTEXT_KEY = 'sonarlint-abl.hasExploredIssueLocations';
 const SHOULD_SHOW_GET_STARTED_VIEW = 'sonarlint-abl.shouldShowGetStartedView';
 const FLIGHT_RECORDER_RUNNING = 'sonarqube-abl.flightRecorderRunning';
-const MCP_SERVER_SUPPORTED_IDE = 'sonarqube-abl.mcpServerSupportedIDE';
+const MCP_SERVER_SUPPORTED_IDE = 'sonarqube-abl.mcpServerSupportedAgent';
 const IDE_LABS_ENABLED_FLAG_KEY = 'sonarqube-abl.ideLabsEnabled';
 const COPILOT_ACTIVATION_DELAY_MS = 10000;
 
@@ -53,13 +53,13 @@ export class ContextManager {
     this.initializeIdeLabsContext();
 
     setTimeout(() => {
-      this.setMCPServerSupportedIDEContext();
+      this.setMCPServerSupportedAgentContext();
     }, COPILOT_ACTIVATION_DELAY_MS);
   }
 
-  setMCPServerSupportedIDEContext() {
-    const isSupportedIDE = getCurrentIdeWithMCPSupport() !== undefined;
-    vscode.commands.executeCommand('setContext', MCP_SERVER_SUPPORTED_IDE, isSupportedIDE);
+  setMCPServerSupportedAgentContext() {
+    const isSupportedAgent = getCurrentAgentWithMCPSupport() !== undefined;
+    vscode.commands.executeCommand('setContext', MCP_SERVER_SUPPORTED_AGENT, isSupportedAgent);
   }
 
   setIssueLocationsContext() {
@@ -92,7 +92,7 @@ export class ContextManager {
     vscode.commands.executeCommand('setContext', HAS_EXPLORED_ISSUE_LOCATIONS_CONTEXT_KEY, undefined);
     vscode.commands.executeCommand('setContext', SHOULD_SHOW_GET_STARTED_VIEW, undefined);
     vscode.commands.executeCommand('setContext', FLIGHT_RECORDER_RUNNING, undefined);
-    vscode.commands.executeCommand('setContext', MCP_SERVER_SUPPORTED_IDE, undefined);
+    vscode.commands.executeCommand('setContext', MCP_SERVER_SUPPORTED_AGENT, undefined);
   }
 
 }

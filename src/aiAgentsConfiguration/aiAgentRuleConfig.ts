@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------------------------
  * SonarLint for VisualStudio Code
- * Copyright (C) 2017-2025 SonarSource SA
+ * Copyright (C) 2017-2025 SonarSource Sàrl
  * sonarlint@sonarsource.com
  * Licensed under the LGPLv3 License. See LICENSE.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
@@ -8,11 +8,20 @@
 
 import * as vscode from 'vscode';
 import { SonarLintExtendedLanguageClient } from '../lsp/client';
+import { Commands } from '../util/commands';
+import { getCurrentAgentWithMCPSupport, AGENT } from './aiAgentUtils';
 
-const SONARQUBE_MCP_INSTRUCTIONS_FILE = 'sonarqube_mcp_instructions.mdc';
+const SONARQUBE_MCP_INSTRUCTIONS_FILE_MDC = 'sonarqube_mcp_instructions.mdc';
+const SONARQUBE_MCP_INSTRUCTIONS_FILE_MD = 'sonarqube_mcp.instructions.md';
 
 export async function introduceSonarQubeRulesFile(languageClient: SonarLintExtendedLanguageClient): Promise<void> {
-  const userConfirmed = await askUserForConfirmation();
+  const currentAgent = getCurrentAgentWithMCPSupport();
+  if (!currentAgent) {
+    vscode.window.showErrorMessage('Current agent does not support MCP Server configuration.');
+    return;
+  }
+
+  const userConfirmed = await askUserForConfirmation(currentAgent);
   if (!userConfirmed) {
     return;
   }
@@ -23,20 +32,21 @@ export async function introduceSonarQubeRulesFile(languageClient: SonarLintExten
     return;
   }
 
-  const cursorRulesUri = vscode.Uri.joinPath(workspaceFolder.uri, '.cursor', 'rules');
-  const rulesFileUri = vscode.Uri.joinPath(cursorRulesUri, SONARQUBE_MCP_INSTRUCTIONS_FILE);
+  const rulesDirectoryUri = getRulesDirectoryUri(workspaceFolder.uri, currentAgent);
+  const rulesFileUri = getRulesFileUri(workspaceFolder.uri, currentAgent);
+  const fileName = getFileName(currentAgent);
 
   try {
     try {
-      await vscode.workspace.fs.stat(cursorRulesUri);
+      await vscode.workspace.fs.stat(rulesDirectoryUri);
     } catch {
-      await vscode.workspace.fs.createDirectory(cursorRulesUri);
+      await vscode.workspace.fs.createDirectory(rulesDirectoryUri);
     }
 
     try {
       await vscode.workspace.fs.stat(rulesFileUri);
       const overwrite = await vscode.window.showWarningMessage(
-        `The ${SONARQUBE_MCP_INSTRUCTIONS_FILE} file already exists. Do you want to overwrite it?`,
+        `The ${fileName} file already exists. Do you want to overwrite it?`,
         'Overwrite'
       );
       if (overwrite !== 'Overwrite') {
@@ -46,7 +56,7 @@ export async function introduceSonarQubeRulesFile(languageClient: SonarLintExten
       // file does not exist, proceed to create it
     }
 
-    const rulesFileResponse = await languageClient.getMCPRulesFileContent('cursor');
+    const rulesFileResponse = await languageClient.getMCPRulesFileContent(currentAgent.toLowerCase());
 
     await vscode.workspace.fs.writeFile(rulesFileUri, Buffer.from(rulesFileResponse.content, 'utf8'));
 
@@ -54,6 +64,8 @@ export async function introduceSonarQubeRulesFile(languageClient: SonarLintExten
     await vscode.window.showTextDocument(document);
 
     vscode.window.showInformationMessage('SonarQube MCP Server rules file created.');
+    // Refresh the AI agents configuration tree
+    vscode.commands.executeCommand(Commands.REFRESH_AI_AGENTS_CONFIGURATION);
   } catch (error) {
     vscode.window.showErrorMessage(`Failed to create rules file: ${error.message}`);
   }
@@ -61,13 +73,19 @@ export async function introduceSonarQubeRulesFile(languageClient: SonarLintExten
 
 export async function openSonarQubeRulesFile(): Promise<void> {
   try {
+    const currentAgent = getCurrentAgentWithMCPSupport();
+    if (!currentAgent) {
+      vscode.window.showErrorMessage('Current agent does not support MCP Server configuration.');
+      return;
+    }
+
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (!workspaceFolder) {
       vscode.window.showErrorMessage('No workspace folder found. Please open a folder first.');
       return;
     }
 
-    const rulesFileUri = getCursorRulesFileUri(workspaceFolder.uri);
+    const rulesFileUri = getRulesFileUri(workspaceFolder.uri, currentAgent);
 
     try {
       await vscode.workspace.fs.stat(rulesFileUri);
@@ -89,12 +107,17 @@ export async function openSonarQubeRulesFile(): Promise<void> {
 }
 
 export async function isSonarQubeRulesFileConfigured(): Promise<boolean> {
+  const currentAgent = getCurrentAgentWithMCPSupport();
+  if (!currentAgent) {
+    return false;
+  }
+
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   if (!workspaceFolder) {
     return false;
   }
 
-  const rulesFileUri = getCursorRulesFileUri(workspaceFolder.uri);
+  const rulesFileUri = getRulesFileUri(workspaceFolder.uri, currentAgent);
   try {
     await vscode.workspace.fs.stat(rulesFileUri);
     return true;
@@ -103,14 +126,42 @@ export async function isSonarQubeRulesFileConfigured(): Promise<boolean> {
   }
 }
 
-function getCursorRulesFileUri(workspaceFolderUri: vscode.Uri): vscode.Uri {
-  return vscode.Uri.joinPath(workspaceFolderUri, '.cursor', 'rules', SONARQUBE_MCP_INSTRUCTIONS_FILE);
+function getRulesDirectoryUri(workspaceFolderUri: vscode.Uri, agent: AGENT): vscode.Uri {
+  switch (agent) {
+    case AGENT.CURSOR:
+      return vscode.Uri.joinPath(workspaceFolderUri, '.cursor', 'rules');
+    case AGENT.WINDSURF:
+      return vscode.Uri.joinPath(workspaceFolderUri, '.windsurf', 'rules');
+    case AGENT.GITHUB_COPILOT:
+      return vscode.Uri.joinPath(workspaceFolderUri, '.github', 'instructions');
+    default:
+      throw new Error(`Unsupported agent: ${agent}`);
+  }
 }
 
-async function askUserForConfirmation(): Promise<boolean> {
+function getRulesFileUri(workspaceFolderUri: vscode.Uri, agent: AGENT): vscode.Uri {
+  const directory = getRulesDirectoryUri(workspaceFolderUri, agent);
+  const fileName = getFileName(agent);
+  return vscode.Uri.joinPath(directory, fileName);
+}
+
+function getFileName(agent: AGENT): string {
+  switch (agent) {
+    case AGENT.CURSOR:
+    case AGENT.WINDSURF:
+      return SONARQUBE_MCP_INSTRUCTIONS_FILE_MDC;
+    case AGENT.GITHUB_COPILOT:
+      return SONARQUBE_MCP_INSTRUCTIONS_FILE_MD;
+    default:
+      throw new Error(`Unsupported agent: ${agent}`);
+  }
+}
+
+async function askUserForConfirmation(agent: AGENT): Promise<boolean> {
+  const fileName = getFileName(agent);
   const result = await vscode.window.showInformationMessage(
     "Would you like to create a SonarQube MCP Server instructions for AI agents?",
-    { modal: true, detail: `This will create a '${SONARQUBE_MCP_INSTRUCTIONS_FILE}' file in your workspace folder.` },
+    { modal: true, detail: `This will create a '${fileName}' file in your workspace folder.` },
     'OK'
   );
   return result === 'OK';

@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------------------------
  * SonarLint for VisualStudio Code
- * Copyright (C) 2017-2025 SonarSource SA
+ * Copyright (C) 2017-2025 SonarSource Sàrl
  * sonarlint@sonarsource.com
  * Licensed under the LGPLv3 License. See LICENSE.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
@@ -101,7 +101,7 @@ export function showNoFileWithUriError(uri: vscode.Uri) {
   )
   .then(action => {
     if (action === 'Show Documentation') {
-      vscode.commands.executeCommand(Commands.OPEN_BROWSER, vscode.Uri.parse('https://docs.sonarsource.com/sonarqube-for-vs-code/troubleshooting/#no-matching-issue-found'));
+      vscode.commands.executeCommand(Commands.OPEN_BROWSER, vscode.Uri.parse('https://docs.sonarsource.com/sonarqube-for-vs-code/resources/troubleshooting/#no-matching-issue-found'));
     }
   });
 }

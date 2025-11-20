@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------------------------
  * SonarLint for VisualStudio Code
- * Copyright (C) 2017-2025 SonarSource SA
+ * Copyright (C) 2017-2025 SonarSource Sàrl
  * sonarlint@sonarsource.com
  * Licensed under the LGPLv3 License. See LICENSE.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
@@ -26,7 +26,11 @@ suite('Java Test Suite', () => {
     assert.ok(vscode.extensions.getExtension('RiversideSoftware.sonarlint-abl'), 'Extension did not load');
     const javaExtension = vscode.extensions.getExtension('redhat.java');
     assert.ok(javaExtension, 'Java extension did not load');
-    const javaExtensionApi = javaExtension?.exports;
+    
+    // Wait for Java extension to be activated
+    await javaExtension.activate();
+    
+    const javaExtensionApi = javaExtension.exports;
     assert.ok(javaExtensionApi.onDidServerModeChange, 'Java extension does not export required API');
 
     const serverModeChangePromise = new Promise<void>((resolve, _) => {

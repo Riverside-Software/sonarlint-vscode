@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------------------------
  * SonarLint for VisualStudio Code
- * Copyright (C) 2017-2025 SonarSource SA
+ * Copyright (C) 2017-2025 SonarSource Sàrl
  * sonarlint@sonarsource.com
  * Licensed under the LGPLv3 License. See LICENSE.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
@@ -263,7 +263,7 @@ function renderConnectionSetupPanel(context: vscode.ExtensionContext, webview: v
         </vscode-checkbox>
         <input type="hidden" id="enableNotifications-initial" value="${!connection.disableNotifications}" />
         ${maybeFolderBindingParagraph}
-        <a href='https://docs.sonarsource.com/sonarqube-for-vs-code/team-features/connected-mode-setup/#connection-setup'>Need help setting up a connection?</a>
+        <a href='https://docs.sonarsource.com/sonarqube-for-vs-code/connect-your-ide/setup/#connection-setup'>Need help setting up a connection?</a>
         <div id="connectionCheck" class="formRowWithStatus">
           <vscode-button id="saveConnection" disabled>${saveButtonLabel}</vscode-button>
           <span id="connectionProgress" class="hidden">

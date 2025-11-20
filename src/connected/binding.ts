@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------------------------
  * SonarLint for VisualStudio Code
- * Copyright (C) 2017-2025 SonarSource SA
+ * Copyright (C) 2017-2025 SonarSource Sàrl
  * sonarlint@sonarsource.com
  * Licensed under the LGPLv3 License. See LICENSE.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
@@ -302,7 +302,7 @@ export class BindingService {
         if (selection === SHARE_CONFIGURATION_ACTION) {
           this.sharedConnectedModeSettingsService.createSharedConnectedModeSettingsFile(workspaceFolder);
         } else if (selection === LEARN_MORE_ACTION) {
-          VSCode.commands.executeCommand(OPEN_BROWSER, VSCode.Uri.parse('https://docs.sonarsource.com/sonarqube-for-vs-code/team-features/connected-mode-setup/#reuse-the-binding-configuration'));
+          VSCode.commands.executeCommand(OPEN_BROWSER, VSCode.Uri.parse('https://docs.sonarsource.com/sonarqube-for-vs-code/connect-your-ide/setup/#reuse-the-binding-configuration'));
         }
       });
   }

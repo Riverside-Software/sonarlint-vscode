@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------------------------
  * SonarLint for VisualStudio Code
- * Copyright (C) 2017-2025 SonarSource SA
+ * Copyright (C) 2017-2025 SonarSource Sàrl
  * sonarlint@sonarsource.com
  * Licensed under the LGPLv3 License. See LICENSE.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
@@ -13,7 +13,7 @@ import * as mcpServerConfig from "../../../src/aiAgentsConfiguration/mcpServerCo
 import * as sinon from 'sinon';
 import * as aiAgentRuleConfig from "../../../src/aiAgentsConfiguration/aiAgentRuleConfig";
 import * as aiAgentUtils from "../../../src/aiAgentsConfiguration/aiAgentUtils";
-import { IDE } from "../../../src/aiAgentsConfiguration/aiAgentUtils";
+import { AGENT } from "../../../src/aiAgentsConfiguration/aiAgentUtils";
 
 
 suite('aiAgentConfigurationTreeDataProvider', () => {
@@ -28,6 +28,9 @@ suite('aiAgentConfigurationTreeDataProvider', () => {
   });
 
   test('getChildren should return empty list when no MCP server is configured', async () => {
+    sinon.stub(mcpServerConfig, 'getCurrentSonarQubeMCPServerConfig').returns(undefined);
+    sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(false);
+
     const children = await underTest.getChildren();
 
     expect(children.length).to.equal(0);
@@ -42,7 +45,7 @@ suite('aiAgentConfigurationTreeDataProvider', () => {
     });
 
     sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(true);
-    sinon.stub(aiAgentUtils, 'getCurrentIdeWithMCPSupport').returns(IDE.CURSOR);
+    sinon.stub(aiAgentUtils, 'getCurrentAgentWithMCPSupport').returns(AGENT.CURSOR);
 
     const children = await underTest.getChildren();
     expect(children.map(c => [ c.label, c.tooltip, c.command.command ])).to.deep.equal([
@@ -51,14 +54,49 @@ suite('aiAgentConfigurationTreeDataProvider', () => {
       ]);
   });
 
-  test('getChildren should return MCP server item only when not in Cursor', async () => {
+  test('getChildren should return both items for GitHub Copilot', async () => {
     sinon.stub(mcpServerConfig, 'getCurrentSonarQubeMCPServerConfig').returns({
       command: 'test-command',
       args: ['test-arg'],
       env: {}
     });
 
-    sinon.stub(aiAgentUtils, 'getCurrentIdeWithMCPSupport').returns(IDE.VSCODE);
+    sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(true);
+    sinon.stub(aiAgentUtils, 'getCurrentAgentWithMCPSupport').returns(AGENT.GITHUB_COPILOT);
+
+    const children = await underTest.getChildren();
+    expect(children.map(c => [ c.label, c.tooltip, c.command.command ])).to.deep.equal([
+        [ 'Configure SonarQube MCP Server', 'AI agent integration • Configured', Commands.OPEN_MCP_SERVER_CONFIGURATION ],
+        [ 'Create Instructions for AI agents', 'SonarQube MCP Server guide • Configured', Commands.OPEN_SONARQUBE_RULES_FILE ]
+    ]);
+  });
+
+  test('getChildren should return both items for Windsurf', async () => {
+    sinon.stub(mcpServerConfig, 'getCurrentSonarQubeMCPServerConfig').returns({
+      command: 'test-command',
+      args: ['test-arg'],
+      env: {}
+    });
+
+    sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(true);
+    sinon.stub(aiAgentUtils, 'getCurrentAgentWithMCPSupport').returns(AGENT.WINDSURF);
+
+    const children = await underTest.getChildren();
+    expect(children.map(c => [ c.label, c.tooltip, c.command.command ])).to.deep.equal([
+        [ 'Configure SonarQube MCP Server', 'AI agent integration • Configured', Commands.OPEN_MCP_SERVER_CONFIGURATION ],
+        [ 'Create Instructions for AI agents', 'SonarQube MCP Server guide • Configured', Commands.OPEN_SONARQUBE_RULES_FILE ]
+    ]);
+  });
+
+  test('getChildren should return only MCP server item when agent is not supported', async () => {
+    sinon.stub(mcpServerConfig, 'getCurrentSonarQubeMCPServerConfig').returns({
+      command: 'test-command',
+      args: ['test-arg'],
+      env: {}
+    });
+
+    sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(false);
+    sinon.stub(aiAgentUtils, 'getCurrentAgentWithMCPSupport').returns(undefined);
 
     const children = await underTest.getChildren();
     expect(children.map(c => [ c.label, c.tooltip, c.command.command ])).to.deep.equal([

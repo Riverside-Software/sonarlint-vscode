@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------------------------
  * SonarLint for VisualStudio Code
- * Copyright (C) 2017-2025 SonarSource SA
+ * Copyright (C) 2017-2025 SonarSource Sàrl
  * sonarlint@sonarsource.com
  * Licensed under the LGPLv3 License. See LICENSE.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
@@ -34,6 +34,7 @@ import { FindingsFolderNode } from './findingsFolderNode';
 import { DependencyRiskNode } from './findingTypes/dependencyRiskNode';
 import { TaintVulnerabilityNode } from './findingTypes/taintVulnerabilityNode';
 import { logToSonarLintOutput } from '../util/logging';
+import { code2ProtocolConverter } from '../util/uri';
 
 export class NewIssuesNode extends vscode.TreeItem {
   constructor() {
@@ -168,7 +169,8 @@ export class FindingsTreeDataProvider implements vscode.TreeDataProvider<Finding
     } else if (finding.findingType === FindingType.Issue) {
       if (!(finding instanceof NotebookFindingNode)) {
         // showing all locations for notebook cells is not supported
-        vscode.commands.executeCommand('SonarLint.ABL.ShowIssueFlows', finding.key, finding.fileUri);
+        const vscodeUri = vscode.Uri.parse(finding.fileUri);
+        vscode.commands.executeCommand('SonarLint.ABL.ShowIssueFlows', finding.key, code2ProtocolConverter(vscodeUri));
       }
       vscode.commands.executeCommand('SonarLint.ABL.ShowIssueDetailsCodeAction', finding.key, finding.fileUri);
     } else if (finding.findingType === FindingType.DependencyRisk) {

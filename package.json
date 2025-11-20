@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Advanced linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.34.99001",
+  "version": "4.35.99001",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -107,7 +107,7 @@
           "type": "array",
           "scope": "application",
           "default": [],
-          "markdownDescription": "Connect SonarQube for IDE to SonarQube Server to apply the same code quality and security standards as your team. Analyze more languages, detect more issues **on the whole project**, receive notifications about the quality gate status, and more. Quality Profiles and file exclusion settings defined on the server are shared between all connected users. Please find the documentation [here](https://docs.sonarsource.com/sonarqube-for-vs-code/team-features/connected-mode/)",
+          "markdownDescription": "Connect SonarQube for IDE to SonarQube Server to apply the same code quality and security standards as your team. Analyze more languages, detect more issues **on the whole project**, receive notifications about the quality gate status, and more. Quality Profiles and file exclusion settings defined on the server are shared between all connected users. Please find the documentation [here](https://docs.sonarsource.com/sonarqube-for-vs-code/connect-your-ide/connected-mode/)",
           "items": {
             "type": "object",
             "properties": {
@@ -301,7 +301,7 @@
           "order": 100,
           "type": "boolean",
           "default": false,
-          "markdownDescription": "If enabled, by default, [focusing on new code](https://docs.sonarsource.com/sonarqube-for-vs-code/using/investigating-issues/#focusing-on-new-code) shows issues introduced in the last 30 days.\n\nFor the most accurate and customizable new code definition, use [Connected Mode](https://docs.sonarsource.com/sonarqube-for-vs-code/team-features/connected-mode) with SonarQube (Server, Cloud).",
+          "markdownDescription": "If enabled, by default, [focusing on new code](https://docs.sonarsource.com/sonarqube-for-vs-code/using/investigating-issues/#focusing-on-new-code) shows issues introduced in the last 30 days.\n\nFor the most accurate and customizable new code definition, use [Connected Mode](https://docs.sonarsource.com/sonarqube-for-vs-code/connect-your-ide/connected-mode) with SonarQube (Server, Cloud).",
           "scope": "machine"
         },
         "sonarlint-abl.earlyAccess.showRegionSelection": {
@@ -592,28 +592,28 @@
         "title": "Configure MCP Server",
         "category": "CABL",
         "icon": "$(mcp-server)",
-        "enablement": "sonarqube-abl.mcpServerSupportedIDE"
+        "enablement": "sonarqube-abl.mcpServerSupportedAgent"
       },
       {
         "command": "SonarLint.ABL.OpenMCPServerConfiguration",
         "title": "Open MCP Server Configuration",
         "category": "CABL",
         "icon": "$(mcp-server)",
-        "enablement": "sonarqube-abl.mcpServerSupportedIDE"
+        "enablement": "sonarqube-abl.mcpServerSupportedAgent"
       },
       {
         "command": "SonarLint.ABL.IntroduceSonarQubeRulesFile",
         "title": "Introduce SonarQube Rules File",
         "category": "CABL",
         "icon": "$(file-text)",
-        "enablement": "sonarqube-abl.mcpServerSupportedIDE"
+        "enablement": "sonarqube-abl.mcpServerSupportedAgent"
       },
       {
         "command": "SonarLint.ABL.OpenSonarQubeRulesFile",
         "title": "Open SonarQube Rules File",
         "category": "CABL",
         "icon": "$(file-text)",
-        "enablement": "sonarqube-abl.mcpServerSupportedIDE"
+        "enablement": "sonarqube-abl.mcpServerSupportedAgent"
       }
     ],
     "viewsContainers": {
@@ -655,7 +655,7 @@
         {
           "id": "sonarlint-abl.AIAgentsConfiguration",
           "name": "AI Agents Configuration",
-          "when": "sonarqube-abl.mcpServerSupportedIDE"
+          "when": "sonarqube-abl.mcpServerSupportedAgent"
         },
         {
           "id": "sonarlint-abl.AllRules",
@@ -935,7 +935,7 @@
         {
           "command": "SonarLint.ABL.ConfigureMCPServer",
           "title": "Configure MCP Server",
-          "when": "sonarqube-abl.mcpServerSupportedIDE && view == sonarlint-abl.ConnectedMode && (viewItem == sonarcloudConnection || viewItem == sonarqubeConnection)",
+          "when": "sonarqube-abl.mcpServerSupportedAgent && view == sonarlint-abl.ConnectedMode && (viewItem == sonarcloudConnection || viewItem == sonarqubeConnection)",
           "group": "inline"
         }
       ]
@@ -1137,10 +1137,11 @@
     "test-cov": "node out/test/runTest.js --coverage",
     "prepare": "node build-sonarlint/prepare.mjs",
     "cyclonedx-run": "cyclonedx-npm",
-    "deploy-all": "node build-sonarlint/deployAll.mjs",
+    "deploy-all-marketplaces": "node build-sonarlint/deployAllMarketplaces.mjs",
     "deploy-universal": "node build-sonarlint/deploy.mjs",
     "package": "node build-sonarlint/package.mjs",
-    "package-all": "node build-sonarlint/package-all.mjs"
+    "package-all-microsoft": "node build-sonarlint/package-all-microsoft.mjs",
+    "package-all-ovsx": "node build-sonarlint/package-all-ovsx.mjs"
   },
   "dependencies": {
     "@openpgp/web-stream-tools": "^0.1.3",
