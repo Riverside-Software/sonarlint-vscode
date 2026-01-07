@@ -21,7 +21,7 @@ pipeline {
         script {
           def cablVersion = "3.4.1"
           def prgsRulesVersion = "3.4.0"
-          def slintlsVersion = "4.6.99001"
+          def slintlsVersion = "4.8.99001"
           withEnv(["MVN_HOME=${tool name: 'Maven 3', type: 'hudson.tasks.Maven$MavenInstallation'}", "JAVA_HOME=${tool name: 'JDK17', type: 'jdk'}"]) {
             sh "mkdir analyzers server resources"
             sh "$MVN_HOME/bin/mvn -U -B -ntp dependency:get -Dartifact=eu.rssw.sonar.openedge:sonar-openedge-plugin:${cablVersion} -Dtransitive=false && cp $HOME/.m2/repository/eu/rssw/sonar/openedge/sonar-openedge-plugin/${cablVersion}/sonar-openedge-plugin-${cablVersion}.jar analyzers/sonaroe.jar"
