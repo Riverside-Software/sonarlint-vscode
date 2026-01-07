@@ -7,8 +7,8 @@
 'use strict';
 
 import artifactory from './artifactory.mjs';
-import { createWriteStream } from 'fs';
-import { Readable } from 'stream';
+import { createWriteStream } from 'node:fs';
+import { Readable } from 'node:stream';
 
 const HTTP_BAD_REQUEST = 400;
 
@@ -17,7 +17,7 @@ export async function downloadFile(fileUrl, destPath, useAuthentication=false) {
   return new Promise(function (resolve, reject) {
     maybeAuthenticatedFetch(fileUrl).then(function (res) {
       if (res.status >= HTTP_BAD_REQUEST) {
-        reject(new Error(`Unexpected HTTP status code: ${res.statusCode} - ${res.statusText}`));
+        reject(new Error(`Unexpected HTTP status code: ${res.status} - ${res.statusText}`));
       }
       const fileStream = createWriteStream(destPath, { flags: 'w' });
       fileStream.on('finish', resolve);

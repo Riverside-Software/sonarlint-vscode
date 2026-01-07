@@ -47,11 +47,18 @@ export interface ShowRuleDescriptionParams {
   }>;
 }
 
+export enum BindingSuggestionOrigin {
+  REMOTE_URL,
+  SHARED_CONFIGURATION,
+  PROPERTIES_FILE,
+  PROJECT_NAME
+}
+
 export interface BindingSuggestion {
   connectionId: string;
   sonarProjectKey: string;
   sonarProjectName: string;
-  isFromSharedConfiguration: boolean;
+  origin: BindingSuggestionOrigin;
 }
 
 export interface AnalysisFile {
@@ -74,7 +81,7 @@ export interface ConnectionSuggestion {
     projectKey: string;
     region?: number;
   };
-  isFromSharedConfiguration: boolean;
+  origin?: BindingSuggestionOrigin;
 }
 
 /**
@@ -451,7 +458,7 @@ export namespace ExtendedClient {
   export interface AssistBindingParams {
     connectionId: string;
     projectKey: string;
-    isFromSharedConfiguration: boolean;
+    origin: BindingSuggestionOrigin;
   }
 
   export interface AssistBindingResponse {
@@ -515,6 +522,10 @@ export namespace ExtendedClient {
 
   export namespace EmbeddedServerStartedNotification {
     export const type = new lsp.NotificationType<EmbeddedServerStartedParams>('sonarlint/embeddedServerStarted');
+  }
+
+  export namespace HasJoinedIdeLabs {
+    export const type = new lsp.RequestType<void, boolean, null>('sonarlint/hasJoinedIdeLabs');
   }
 }
 
@@ -756,6 +767,20 @@ export namespace ExtendedServer {
       new lsp.RequestType<GetSharedConnectedModeConfigFileParams, GetSharedConnectedModeConfigFileResponse, null>("sonarlint/getSharedConnectedModeFileContent")
   }
 
+  export interface JoinIdeLabsProgramParams {
+    email: string;
+    ide: string;
+  }
+
+  export interface JoinIdeLabsProgramResponse {
+    success: boolean;
+    message: string;
+  }
+
+  export namespace JoinIdeLabsProgram {
+    export const type = new lsp.RequestType<JoinIdeLabsProgramParams, JoinIdeLabsProgramResponse, null>('sonarlint/joinIdeLabsProgram');
+  }
+
   export interface GetMCPServerConfigurationParams {
     connectionId: string;
     token: string;
@@ -909,14 +934,31 @@ export interface GetHookScriptContentResponse {
     );
   }
 
-  export enum BindingCreationMode {
-    AUTOMATIC,
-    IMPORTED,
-    MANUAL
+  export interface AnalyzeVCSChangedFilesParams {
+    configScopeIds: string[];
   }
 
-  export namespace DidCreateBinding {
-    export const type = new lsp.NotificationType<BindingCreationMode>('sonarlint/didCreateBinding');
+  export namespace AnalyzeVCSChangedFiles {
+    export const type = new lsp.NotificationType<AnalyzeVCSChangedFilesParams>('sonarlint/analyzeVCSChangedFiles');
+  }
+
+  export namespace AddedManualBindings {
+    export const type = new lsp.NotificationType('sonarlint/addedManualBindings');
+  }
+
+  export enum BindingSuggestionOrigin {
+    REMOTE_URL,
+    SHARED_CONFIGURATION,
+    PROPERTIES_FILE,
+    PROJECT_NAME
+  }
+
+  export interface AcceptedBindingSuggestionParams {
+    origin: BindingSuggestionOrigin
+  }
+
+  export namespace AcceptedBindingSuggestion {
+    export const type = new lsp.NotificationType<AcceptedBindingSuggestionParams>('sonarlint/acceptedBindingSuggestion');
   }
 
   export enum ImpactSeverity {
@@ -975,4 +1017,13 @@ export interface GetHookScriptContentResponse {
   export namespace DumpThreadsNotification {
     export const type = new lsp.NotificationType('sonarlint/dumpThreads');
   }
+
+  export namespace LabsExternalLinkClicked {
+    export const type = new lsp.NotificationType<string>('sonarlint/labsExternalLinkClicked');
+  }
+
+  export namespace LabsFeedbackLinkClicked {
+    export const type = new lsp.NotificationType<string>('sonarlint/labsFeedbackLinkClicked');
+  }
+
 }

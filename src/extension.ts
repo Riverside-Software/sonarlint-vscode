@@ -9,8 +9,8 @@
 // Must be kept at the top for Node instrumentation to work correctly
 import { MonitoringService } from './monitoring/monitoring';
 
-import * as ChildProcess from 'child_process';
-import * as Path from 'path';
+import * as ChildProcess from 'node:child_process';
+import * as Path from 'node:path';
 import * as VSCode from 'vscode';
 import { LanguageClientOptions, StreamInfo } from 'vscode-languageclient/node';
 import { notifyMissingCompileCommands } from './cfamily/cfamily';
@@ -73,6 +73,7 @@ import { AutomaticAnalysisService } from './settings/automaticAnalysis';
 import { FlightRecorderService } from './monitoring/flightrecorder';
 import { onEmbeddedServerStarted } from './aiAgentsConfiguration/mcpServerConfig';
 import { IdeLabsFlagManagementService } from './labs/ideLabsFlagManagementService';
+import { LabsWebviewProvider } from './labs/labsWebviewProvider';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -358,8 +359,12 @@ export async function activate(context: VSCode.ExtensionContext) {
     }
   });
 
-  const commandsManager = new CommandsManager(context, languageClient, allRulesTreeDataProvider, allRulesView, allConnectionsTreeDataProvider, allConnectionsView, aiAgentsConfigurationTreeDataProvider);
-  commandsManager.registerCommands();
+
+  aiAgentsConfigurationTreeDataProvider = new AIAgentsConfigurationTreeDataProvider();
+  aiAgentsConfigurationView = VSCode.window.createTreeView('SonarLint.AIAgentsConfiguration', {
+    treeDataProvider: aiAgentsConfigurationTreeDataProvider
+  });
+  context.subscriptions.push(aiAgentsConfigurationView);
 
   allConnectionsTreeDataProvider = new AllConnectionsTreeDataProvider(languageClient);
 
@@ -367,6 +372,9 @@ export async function activate(context: VSCode.ExtensionContext) {
     treeDataProvider: allConnectionsTreeDataProvider
   });
   context.subscriptions.push(allConnectionsView);
+
+  const commandsManager = new CommandsManager(context, languageClient, allRulesTreeDataProvider, allRulesView, allConnectionsTreeDataProvider, allConnectionsView, aiAgentsConfigurationTreeDataProvider);
+  commandsManager.registerCommands();
 
   automaticAnalysisStatusItem.show();
   
@@ -383,11 +391,10 @@ export async function activate(context: VSCode.ExtensionContext) {
   });
   context.subscriptions.push(helpAndFeedbackView);
 
-  aiAgentsConfigurationTreeDataProvider = new AIAgentsConfigurationTreeDataProvider();
-  aiAgentsConfigurationView = VSCode.window.createTreeView('sonarlint-abl.AIAgentsConfiguration', {
-    treeDataProvider: aiAgentsConfigurationTreeDataProvider
-  });
-  context.subscriptions.push(aiAgentsConfigurationView);
+  const labsWebviewProvider = new LabsWebviewProvider(context, languageClient);
+  context.subscriptions.push(
+    VSCode.window.registerWebviewViewProvider('sonarqube-abl.Labs', labsWebviewProvider)
+  );
 
   TaintVulnerabilityDecorator.init();
 
@@ -532,6 +539,9 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
   });
   languageClient.onNotification(ExtendedClient.EmbeddedServerStartedNotification.type, (params) => {
     onEmbeddedServerStarted(params.port);
+  });
+  languageClient.onRequest(ExtendedClient.HasJoinedIdeLabs.type, () => {
+    return IdeLabsFlagManagementService.instance.isIdeLabsJoined();
   });
 }
 

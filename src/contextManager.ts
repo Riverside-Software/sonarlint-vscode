@@ -11,18 +11,18 @@ import { BindingService } from './connected/binding';
 import { allFalse, allTrue } from './rules/rules';
 import { ConnectionSettingsService } from './settings/connectionsettings';
 import { HAS_CLICKED_GET_STARTED_LINK } from './commons'
-import { getCurrentAgentWithMCPSupport } from './aiAgentsConfiguration/aiAgentUtils';
-import { getCurrentAgentWithHookSupport } from './aiAgentsConfiguration/aiAgentHooks';
+import { getCurrentAgentWithMCPSupport, getCurrentAgentWithHookSupport } from './aiAgentsConfiguration/aiAgentUtils';
 import { IdeLabsFlagManagementService } from './labs/ideLabsFlagManagementService';
 
-const SOME_CONNECTED_MODE_CONTEXT_KEY = 'sonarlint-abl.someFoldersUseConnectedMode';
-const SOME_STANDALONE_MODE_CONTEXT_KEY = 'sonarlint-abl.someFoldersUseStandaloneMode';
-const HAS_EXPLORED_ISSUE_LOCATIONS_CONTEXT_KEY = 'sonarlint-abl.hasExploredIssueLocations';
-const SHOULD_SHOW_GET_STARTED_VIEW = 'sonarlint-abl.shouldShowGetStartedView';
+const SOME_CONNECTED_MODE_CONTEXT_KEY = 'sonarqube-abl.someFoldersUseConnectedMode';
+const SOME_STANDALONE_MODE_CONTEXT_KEY = 'sonarqube-abl.someFoldersUseStandaloneMode';
+const HAS_EXPLORED_ISSUE_LOCATIONS_CONTEXT_KEY = 'sonarqube-abl.hasExploredIssueLocations';
+const SHOULD_SHOW_GET_STARTED_VIEW = 'sonarqube-abl.shouldShowGetStartedView';
 const FLIGHT_RECORDER_RUNNING = 'sonarqube-abl.flightRecorderRunning';
 const MCP_SERVER_SUPPORTED_AGENT = 'sonarqube-abl.mcpServerSupportedAgent';
 const HOOK_SCRIPT_SUPPORTED_AGENT = 'sonarqube-abl.hookScriptSupportedAgent';
 const IDE_LABS_ENABLED_FLAG_KEY = 'sonarqube-abl.ideLabsEnabled';
+const IDE_LABS_JOINED_FLAG_KEY = 'sonarqube-abl.ideLabsJoined';
 const COPILOT_ACTIVATION_DELAY_MS = 10000;
 
 export class ContextManager {
@@ -86,11 +86,17 @@ export class ContextManager {
   }
 
   initializeIdeLabsContext() {
+    const joined = IdeLabsFlagManagementService.instance.isIdeLabsJoined();
+    this.setIdeLabsJoinedContext(joined);
     const enabled = IdeLabsFlagManagementService.instance.isIdeLabsEnabled();
-    this.setIdeLabsContext(enabled);
+    this.setIdeLabsEnabledContext(enabled);
   }
 
-  setIdeLabsContext(enabled: boolean) {
+  setIdeLabsJoinedContext(joined: boolean) {
+    vscode.commands.executeCommand('setContext', IDE_LABS_JOINED_FLAG_KEY, joined);
+  }
+
+  setIdeLabsEnabledContext(enabled: boolean) {
     vscode.commands.executeCommand('setContext', IDE_LABS_ENABLED_FLAG_KEY, enabled);
   }
 

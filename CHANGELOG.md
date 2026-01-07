@@ -1,3 +1,31 @@
+## 4.38.1
+
+* Bugfix - unable to verify authenticity of the downloaded CFamily analyzer
+
+## 4.38
+
+* Update Python analyzer 5.14.2 -> 5.15
+* Update CFamily analyzer 6.75.1 -> 6.76
+* Update Text & Secrets analyzer 234 -> 2.36
+* Update C# analyzer 10.16.2 -> [10.17](https://github.com/SonarSource/sonar-dotnet/releases/tag/10.17.0.131074)
+* Update IaC analyzer 2.2 -> [2.3](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2027050%20ORDER%20BY%20created%20ASC)
+
+## 4.37
+
+* Introduce SonarQube for IDE Labs - a way to get early access to experimental features of SonarQube for IDE
+* Update Java analyzer 8.20 -> [8.22](https://github.com/SonarSource/sonar-java/releases/tag/8.22.0.41895)
+* Update Go analyzer 1.30 -> 1.31
+* Update PHP analyzer 3.52 -> [3.53](https://github.com/SonarSource/sonar-php/releases/tag/3.53.0.15220)
+* Upadte XML analyzer 2.13 to [2.14.2](https://github.com/SonarSource/sonar-xml/releases/tag/2.14.2.7437)
+* Update Python analyzer 5.13 -> 5.14.2
+* Update IaC analyzer 2.1 to [2.2](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2026018%20ORDER%20BY%20created%20ASC)
+* Update Text & Secrets analyzer 2.33 -> 2.34
+* Update C# analyzer 10.15 -> [10.16.2](https://github.com/SonarSource/sonar-dotnet/releases/tag/10.16.2.130377)
+* Update CFamily analyzer 6.74 -> 6.75.1
+* Update JS/TS/CSS analyzer 11.6 to [11.7.1](https://github.com/SonarSource/SonarJS/releases/tag/11.7.1.36988)
+* Update HTML analyzer 3.20 -> [3.22](https://github.com/SonarSource/sonar-html/releases/tag/3.22.0.7011)
+* Update Java Symbolic Execution analyzer 8.16.1 -> [8.16.3](https://github.com/SonarSource/sonar-java-symbolic-execution/releases/tag/8.16.3.1589)
+
 ## 4.36
 
 * Update CFamily analyzer 6.73 -> [6.74](https://sonarsource.atlassian.net/issues/?jql=project%20%3D%2010166%20AND%20fixVersion%3D23720%20ORDER%20BY%20priority%20DESC%2C%20key%20ASC)

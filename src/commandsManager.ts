@@ -42,7 +42,9 @@ import { ConnectionSettingsService } from './settings/connectionsettings';
 import { installManagedJre } from './util/requirements';
 import { AIAgentsConfigurationTreeDataProvider } from './aiAgentsConfiguration/aiAgentsConfigurationTreeDataProvider';
 import { Commands } from './util/commands';
-import { getCurrentAgentWithHookSupport, installHook, openHookConfiguration, openHookScript, uninstallHook } from './aiAgentsConfiguration/aiAgentHooks';
+import { installHook, openHookConfiguration, openHookScript, uninstallHook } from './aiAgentsConfiguration/aiAgentHooks';
+import { getCurrentAgentWithHookSupport } from './aiAgentsConfiguration/aiAgentUtils';
+import { code2ProtocolConverter } from './util/uri';
 
 export class CommandsManager {
   constructor(
@@ -183,6 +185,17 @@ export class CommandsManager {
       vscode.commands.registerCommand(Commands.ANALYSE_OPEN_FILE, () => {
         IssueService.instance.analyseOpenFileIgnoringExcludes(true);
         vscode.commands.executeCommand('sonarqube-abl.Findings.focus');
+      }),
+      vscode.commands.registerCommand(Commands.ANALYZE_VCS_CHANGED_FILES, () => {
+        const workspaceFolderUris = vscode.workspace.workspaceFolders?.map(f => code2ProtocolConverter(f.uri));
+        if (!workspaceFolderUris) {
+          vscode.window.showWarningMessage('No workspace folders found; Ignoring request to analyze VCS changed files.');
+          return;
+        }
+        this.languageClient.sendNotification(ExtendedServer.AnalyzeVCSChangedFiles.type, {
+          configScopeIds: workspaceFolderUris
+        });
+        vscode.commands.executeCommand('SonarQube.Findings.focus');
       }),
       vscode.commands.registerCommand(
         Commands.FOCUS_ON_CONNECTION,
