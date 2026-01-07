@@ -310,7 +310,7 @@
           "markdownDescription": "Show region selection while creating SonarQube Cloud Connection",
           "scope": "machine"
         },
-        "sonarlint.startFlightRecorder": {
+        "sonarlint-abl.startFlightRecorder": {
           "type": "boolean",
           "default": false,
           "markdownDescription": "Start the language server's flight recorder mode.\n\n⚠ **This feature shares detailed information with SonarSource (logs, telemetry events) that may include _confidential_ data, only enable if requested to help investigate an issue.**",
@@ -1012,7 +1012,7 @@
     },
     "languageModelTools": [
       {
-        "name": "sonarqube_list_potential_security_issues",
+        "name": "sonarqube-abl_list_potential_security_issues",
         "displayName": "SonarQube: List Potential Security Issues",
         "toolReferenceName": "sonarqube_getPotentialSecurityIssues",
         "canBeReferencedInPrompt": true,
@@ -1034,7 +1034,7 @@
         }
       },
       {
-        "name": "sonarqube_exclude_from_analysis",
+        "name": "sonarqube-abl_exclude_from_analysis",
         "displayName": "SonarQube: Exclude File or Folder from Analysis",
         "toolReferenceName": "sonarqube_excludeFiles",
         "canBeReferencedInPrompt": true,
@@ -1057,7 +1057,7 @@
         }
       },
       {
-        "name": "sonarqube_setup_connected_mode",
+        "name": "sonarqube-abl_setup_connected_mode",
         "displayName": "SonarQube: Set up Connected Mode",
         "toolReferenceName": "sonarqube_setUpConnectedMode",
         "canBeReferencedInPrompt": true,
@@ -1097,7 +1097,7 @@
         }
       },
       {
-        "name": "sonarqube_analyze_file",
+        "name": "sonarqube-abl_analyze_file",
         "displayName": "SonarQube: Analyze File",
         "toolReferenceName": "sonarqube_analyzeFile",
         "canBeReferencedInPrompt": true,

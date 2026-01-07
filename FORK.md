@@ -17,6 +17,7 @@
   * Commands category changed from `SonarQube` to `CABL`
   * View name changed from `SonarLint.` to `sonarlint-abl.` and from `SonarQube.` to `sonarqube-abl.`
   * Remove walkthrough section
+  * Tool names in languageModelTools changed from `sonarqube_XXX` to `sonarqube-abl_XXX`
 
 * Somewhere else:
   * Prefix of setContext attributes changed from `sonarqube` to `sonarlint-abl`

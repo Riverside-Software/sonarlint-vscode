@@ -17,7 +17,7 @@ interface IExcludeFileOrFolderParameters {
 }
 
 export class ExcludeFileOrFolderTool implements vscode.LanguageModelTool<IExcludeFileOrFolderParameters> {
-  public static readonly toolName = 'sonarqube_exclude_from_analysis';
+  public static readonly toolName = 'sonarqube-abl_exclude_from_analysis';
   constructor(readonly client: SonarLintExtendedLanguageClient) {
   }
 
