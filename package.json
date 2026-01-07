@@ -175,14 +175,6 @@
           "markdownDescription": "Enable or disable on-the-fly analysis of files you work on. When enabled, SonarQube for IDE will automatically analyze open files and show findings in real-time.",
           "scope": "application"
         },
-        "sonarlint-abl.ideLabsEnabled": {
-          "order": 5,
-          "type": "boolean",
-          "default": false,
-          "markdownDescription": "Enable or disable [**CABL Labs**](command:sonarqube-abl.Labs.focus) experimental features. Only takes effect after joining CABL Labs.",
-          "when": "sonarqube.ideLabsJoined",
-          "scope": "application"
-        },
         "sonarlint-abl.rules": {
           "order": 6,
           "type": "object",
@@ -724,12 +716,6 @@
         {
           "id": "sonarqube-abl.Findings",
           "name": "CABL Findings"
-        },
-        {
-          "id": "sonarqube-abl.Labs",
-          "name": "CABL Labs",
-          "icon": "$(beaker)",
-          "type": "webview"
         }
       ]
     },
@@ -832,11 +818,6 @@
           "submenu": "sonarqube-abl.FindingsFilterActive",
           "when": "view == sonarqube-abl.Findings && sonarqube-abl.findingsFilter != filter-all",
           "group": "navigation"
-        },
-        {
-          "submenu": "sonarqube-abl.Labs",
-          "when": "view == sonarqube-abl.Labs && sonarqube-abl.ideLabsJoined",
-          "group": "navigation"
         }
       ],
       "sonarqube-abl.FindingsFilter": [
@@ -891,18 +872,6 @@
           "command": "SonarQube.ABL.ShowCurrentFileOnly",
           "when": "view == sonarqube-abl.Findings",
           "group": "1_filter"
-        }
-      ],
-      "SonarQube.Labs": [
-        {
-          "command": "SonarQube.ABL.EnableLabs",
-          "title": "Enable Labs",
-          "when": "view == sonarqube-abl.Labs && !sonarqube-abl.ideLabsEnabled"
-        },
-        {
-          "command": "SonarQube.ABL.DisableLabs",
-          "title": "Disable Labs",
-          "when": "view == sonarqube-abl.Labs && sonarqube-abl.ideLabsEnabled"
         }
       ],
       "view/item/context": [
@@ -1206,11 +1175,6 @@
         "id": "sonarqube-abl.FindingsFilterActive",
         "label": "Filter Findings",
         "icon": "$(filter-filled)"
-      },
-      {
-        "id": "sonarqube-abl.Labs",
-        "label": "Enable / Disable IDE Labs",
-        "icon": "$(settings-gear)"
       }
     ]
   },

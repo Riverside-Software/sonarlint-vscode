@@ -34,9 +34,9 @@ export class FindingsFileNode extends vscode.TreeItem {
     this.iconPath = vscode.ThemeIcon.File;
     
     if (category) {
-      this.tooltip = `${findingsCount} SonarQube Finding(s) in ${category} code`;
+      this.tooltip = `${findingsCount} CABL Finding(s) in ${category} code`;
     } else {
-      this.tooltip = `${findingsCount} SonarQube Finding(s)`;
+      this.tooltip = `${findingsCount} CABL Finding(s)`;
     }
   }
 }

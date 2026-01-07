@@ -86,9 +86,9 @@ export class ContextManager {
   }
 
   initializeIdeLabsContext() {
-    const joined = IdeLabsFlagManagementService.instance.isIdeLabsJoined();
+    const joined = false; // IdeLabsFlagManagementService.instance.isIdeLabsJoined();
     this.setIdeLabsJoinedContext(joined);
-    const enabled = IdeLabsFlagManagementService.instance.isIdeLabsEnabled();
+    const enabled = false; // IdeLabsFlagManagementService.instance.isIdeLabsEnabled();
     this.setIdeLabsEnabledContext(enabled);
   }
 

@@ -361,7 +361,7 @@ export async function activate(context: VSCode.ExtensionContext) {
 
 
   aiAgentsConfigurationTreeDataProvider = new AIAgentsConfigurationTreeDataProvider();
-  aiAgentsConfigurationView = VSCode.window.createTreeView('SonarLint.AIAgentsConfiguration', {
+  aiAgentsConfigurationView = VSCode.window.createTreeView('sonarlint-abl.AIAgentsConfiguration', {
     treeDataProvider: aiAgentsConfigurationTreeDataProvider
   });
   context.subscriptions.push(aiAgentsConfigurationView);
@@ -391,10 +391,11 @@ export async function activate(context: VSCode.ExtensionContext) {
   });
   context.subscriptions.push(helpAndFeedbackView);
 
-  const labsWebviewProvider = new LabsWebviewProvider(context, languageClient);
-  context.subscriptions.push(
-    VSCode.window.registerWebviewViewProvider('sonarqube-abl.Labs', labsWebviewProvider)
-  );
+  // No SonarQube for IDE labs in CABL
+  // const labsWebviewProvider = new LabsWebviewProvider(context, languageClient);
+  // context.subscriptions.push(
+  //   VSCode.window.registerWebviewViewProvider('sonarqube-abl.Labs', labsWebviewProvider)
+  // );
 
   TaintVulnerabilityDecorator.init();
 
@@ -559,10 +560,10 @@ function updateFindingsViewContainerBadge() {
       tooltip: `${filterDisplayName}: ${filteredCount} of ${totalCount}`
     };
     
-    findingsView.title = `SonarQube Findings (${filterDisplayName})`;
+    findingsView.title = `CABL Findings (${filterDisplayName})`;
   } else {
     findingsView.badge = undefined;
-    findingsView.title = 'SonarQube Findings';
+    findingsView.title = 'CABL Findings';
   }
 }
 
