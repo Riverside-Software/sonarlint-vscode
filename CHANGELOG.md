@@ -1,3 +1,19 @@
+## 4.36
+
+* Update CFamily analyzer 6.73 -> [6.74](https://sonarsource.atlassian.net/issues/?jql=project%20%3D%2010166%20AND%20fixVersion%3D23720%20ORDER%20BY%20priority%20DESC%2C%20key%20ASC)
+* Update IaC analyzer 1.52 -> [2.1](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2025911%20ORDER%20BY%20created%20ASC)
+* Update JS/TS/CSS analyzer 11.5 -> [11.6](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2023258%20ORDER%20BY%20created%20ASC)
+* Update Python analyzer 5.12 -> [5.13](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2024646%20ORDER%20BY%20created%20ASC)
+* Update PHP analyzer 3.51 -> [3.52](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2024382%20ORDER%20BY%20created%20ASC)
+* Update Go analyzer 1.29 -> [1.30](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2024578%20ORDER%20BY%20created%20ASC)
+* Update Text & Secrets analyzer 2.32 -> [2.33](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2024845%20ORDER%20BY%20created%20ASC)
+* Support `.slnx` projects
+* Support one-click generation of Windsurf Cascade hooks for post-generation analysis (beta)
+
+## 4.35.1
+
+* Platform-specific packages downloaded from OpenVSX marketplace no longer support C# analysis. Download & install packages directly from [our releases page](https://github.com/SonarSource/sonarlint-vscode/releases) to keep C# analysis on non-Microsoft IDEs.
+
 ## 4.35
 
 * Update IaC analyzer 1.51 -> [1.52](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2023819%20ORDER%20BY%20created%20ASC)

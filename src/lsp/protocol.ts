@@ -330,8 +330,14 @@ export namespace ExtendedClient {
     export const type = new lsp.NotificationType<ConnectionCheckResult>('sonarlint/reportConnectionCheckResult');
   }
 
+  export enum CanShowMissingRequirementNotificationResult {
+    Full = "full",
+    ErrorOnly = "error_only",
+    DoNotShowAgain = "never_again"
+  }
+
   export namespace CanShowMissingRequirementNotification {
-    export const type = new lsp.RequestType<string, boolean, void>('sonarlint/canShowMissingRequirementsNotification');
+    export const type = new lsp.RequestType<string, CanShowMissingRequirementNotificationResult, void>('sonarlint/canShowMissingRequirementsNotification');
   }
 
   export namespace DoNotShowMissingRequirementsMessageAgain {
@@ -771,6 +777,22 @@ export namespace ExtendedServer {
 
   export namespace GetMCPRulesFileContent {
     export const type = new lsp.RequestType<string, GetMCPRulesFileContentResponse, null>('sonarlint/getMCPRuleFileContent');
+  }
+
+export interface HookScript {
+  content: string;
+  fileName: string;
+}
+
+export interface GetHookScriptContentResponse {
+  scriptContent: string;
+  scriptFileName: string;
+  configContent: string;
+  configFileName: string;
+}
+
+  export namespace GetAiAgentHookScriptContent {
+    export const type = new lsp.RequestType<string, GetHookScriptContentResponse, null>('sonarlint/getAiAgentHookScriptContent');
   }
 
   export namespace ReopenResolvedLocalIssues {

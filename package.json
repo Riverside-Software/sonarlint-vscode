@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Advanced linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.35.99002",
+  "version": "4.37.0",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -614,6 +614,34 @@
         "category": "CABL",
         "icon": "$(file-text)",
         "enablement": "sonarqube-abl.mcpServerSupportedAgent"
+      },
+      {
+        "command": "SonarLint.ABL.InstallAiAgentHookScript",
+        "title": "Install Hook for Code Analysis",
+        "category": "SonarQube",
+        "icon": "$(symbol-event)",
+        "enablement": "sonarqube.hookScriptSupportedAgent"
+      },
+      {
+        "command": "SonarLint.ABL.UninstallAiAgentHookScript",
+        "title": "Uninstall AI Agent Hook Script",
+        "category": "SonarQube",
+        "icon": "$(trash)",
+        "enablement": "sonarqube.hookScriptSupportedAgent"
+      },
+      {
+        "command": "SonarLint.ABL.OpenAiAgentHookScript",
+        "title": "Open AI Agent Hook Script",
+        "category": "SonarQube",
+        "icon": "$(go-to-file)",
+        "enablement": "sonarqube.hookScriptSupportedAgent"
+      },
+      {
+        "command": "SonarLint.ABL.OpenAiAgentHookConfiguration",
+        "title": "Open AI Agent Hook Configuration File",
+        "category": "SonarQube",
+        "icon": "$(json)",
+        "enablement": "sonarqube.hookScriptSupportedAgent"
       }
     ],
     "viewsContainers": {
@@ -678,7 +706,7 @@
     "viewsWelcome": [
       {
         "view": "sonarlint-abl.IssueLocations",
-        "contents": "No locations to show.\nSelect a SonarQube issue in the \"CABL\" view.\n[Show Findings](command:SonarQube.ABL.Findings.focus)"
+        "contents": "No locations to show.\nSelect a SonarQube issue in the \"CABL\" view.\n[Show Findings](command:sonarqube-abl.Findings.focus)"
       },
       {
         "view": "sonarlint-abl.ConnectedMode",
