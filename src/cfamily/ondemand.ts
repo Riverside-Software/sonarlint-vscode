@@ -27,6 +27,7 @@ function getOnDemandAnalyzersPath() {
 }
 
 export async function maybeAddCFamilyJar(params: string[]) {
+  /* Not used in CABL
   const expectedVersion: string = util.packageJson.jarDependencies.filter(dep => dep.artifactId === CFAMILY_PLUGIN_ID)[0].version;
   const maybeCFamilyJar = path.resolve(getOnDemandAnalyzersPath(), CFAMILY_PLUGIN_ID, expectedVersion, CFAMILY_JAR);
   if (fs.existsSync(maybeCFamilyJar)) {
@@ -37,6 +38,7 @@ export async function maybeAddCFamilyJar(params: string[]) {
     // Async call is expected here
     startDownloadAsync(getOnDemandAnalyzersPath(), expectedVersion);
   }
+  */
 }
 
 async function startDownloadAsync(onDemandAnalyzersPath: string, expectedVersion: string) {
@@ -147,7 +149,9 @@ export async function cleanupOldAnalyzersAsync(): Promise<void> {
 }
 
 function cleanupOldAnalyzerVersions(pluginId: string) {
+  /* Not used in CABL
   fs.readdirSync(path.resolve(getOnDemandAnalyzersPath(), pluginId)).forEach(cleanVersionIfUnused(pluginId));
+  */
 }
 
 function cleanVersionIfUnused(pluginId: string) {
@@ -158,7 +162,9 @@ function cleanVersionIfUnused(pluginId: string) {
       const dateTimeLastUsed = DateTime.fromMillis(lastUsed);
       // Comparing a `DateTime` in the past with `diffNow` returns a negative number
       if (dateTimeLastUsed.diffNow('months').months <= PLUGIN_MAX_AGE_MONTHS) {
+        /* Not used in CABL
         fs.rmSync(path.resolve(getOnDemandAnalyzersPath(), pluginId, version), { recursive: true, force: true });
+        */
         util.extensionContext.globalState.update(lastUsedForThisPluginAndVersion, undefined);
       }
     }

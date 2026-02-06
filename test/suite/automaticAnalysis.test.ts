@@ -57,7 +57,7 @@ suite('AutomaticAnalysisService Test Suite', () => {
   test('should clear findings view message and update status bar when analysis is enabled', async () => {
     // Start with disabled (message set)
     await vscode.workspace
-      .getConfiguration('sonarlint')
+      .getConfiguration('sonarlint-abl')
       .update('automaticAnalysis', false, vscode.ConfigurationTarget.Global);
     
     automaticAnalysisService.updateAutomaticAnalysisStatusBarAndFindingsViewMessage();
@@ -65,7 +65,7 @@ suite('AutomaticAnalysisService Test Suite', () => {
 
     // Change to enabled
     await vscode.workspace
-      .getConfiguration('sonarlint')
+      .getConfiguration('sonarlint-abl')
       .update('automaticAnalysis', true, vscode.ConfigurationTarget.Global);
     
     automaticAnalysisService.updateAutomaticAnalysisStatusBarAndFindingsViewMessage();

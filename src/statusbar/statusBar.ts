@@ -86,8 +86,8 @@ export class StatusBarService {
     const analysisIcon = this.automaticAnalysisEnabled ? '$(circle-outline)' : '$(circle-filled)';
     const analysisLabel = this.automaticAnalysisEnabled ? 'Disable automatic analysis' : 'Enable automatic analysis';
     const analysisCommand = this.automaticAnalysisEnabled
-      ? 'SonarLint.AutomaticAnalysis.Disable'
-      : 'SonarLint.AutomaticAnalysis.Enable';
+      ? 'SonarLint.ABL.AutomaticAnalysis.Disable'
+      : 'SonarLint.ABL.AutomaticAnalysis.Enable';
     const focusIcon = this.focusOnNewCode ? '$(eye-closed)' : '$(eye)';
     const focusLabel = this.focusOnNewCode ? 'Focus on overall code' : 'Focus on new code';
     items.push({
@@ -140,7 +140,7 @@ export class StatusBarService {
     }
 
     const selectedItem = await VSCode.window.showQuickPick(items, {
-      title: 'SonarQube',
+      title: 'CABL',
       placeHolder: 'Select an action'
     });
 

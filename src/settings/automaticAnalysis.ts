@@ -17,7 +17,7 @@ export class AutomaticAnalysisService {
   }
 
   updateAutomaticAnalysisStatusBarAndFindingsViewMessage() {
-    const isEnabled = vscode.workspace.getConfiguration('sonarlint').get('automaticAnalysis', true);
+    const isEnabled = vscode.workspace.getConfiguration('sonarlint-abl').get('automaticAnalysis', true);
 
     // Update findings view message
     if (isEnabled) {

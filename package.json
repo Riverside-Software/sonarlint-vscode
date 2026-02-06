@@ -698,7 +698,7 @@
           "id": "sonarlint-abl.AllRules",
           "name": "Rules",
           "visibility": "collapsed",
-          "when": "sonarlint-abl.someFoldersUseStandaloneMode"
+          "when": "sonarqube-abl.someFoldersUseStandaloneMode"
         },
         {
           "id": "sonarlint-abl.HelpAndFeedback",
