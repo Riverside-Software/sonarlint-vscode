@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Advanced linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.40.99001",
+  "version": "4.41.0",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -1210,7 +1210,7 @@
     "properties": "^1.2.1",
     "sinon": "^21.0.0",
     "supports-color": "^10.2.2",
-    "tar": "^7.5.2",
+    "tar": "^7.5.6",
     "underscore": "^1.13.7",
     "vscode-languageclient": "^9.0.1",
     "zlib": "^1.0.5"

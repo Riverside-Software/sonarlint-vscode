@@ -9,6 +9,10 @@
 import * as VSCode from 'vscode';
 import { Commands } from '../util/commands';
 
+interface StatusBarQuickPickItem extends VSCode.QuickPickItem {
+  command: string;
+}
+
 export class StatusBarService {
   private static _instance: StatusBarService;
   private readonly statusBarItem: VSCode.StatusBarItem;
@@ -54,21 +58,8 @@ export class StatusBarService {
   }
 
   private updateStatusBarText(): void {
-    const parts: string[] = [];
-
-    const focusText = this.focusOnNewCode ? 'new code' : 'overall code';
-    parts.push(`focus on ${focusText}`);
-
-    if (this.referenceBranchName) {
-      parts.push(`branch ${this.referenceBranchName}`);
-    }
-
-    if (parts.length > 0) {
-      this.statusBarItem.text = `CABL (${parts.join(', ')})`;
-    } else {
-      this.statusBarItem.text = 'CABL';
-    }
-
+    const icon = this.automaticAnalysisEnabled ? '$(circle-filled)' : '$(circle-outline)';
+    this.statusBarItem.text = `${icon} CABL`;
     this.updateStatusBarTooltip();
   }
 
@@ -84,27 +75,23 @@ export class StatusBarService {
       tooltipParts.push(`Branch: ${this.referenceBranchName}`);
     }
 
-    tooltipParts.push('\nClick to open menu');
+    tooltipParts.push('\nSelect to open menu');
 
     this.statusBarItem.tooltip = tooltipParts.join('\n');
   }
 
   async showQuickPickMenu(): Promise<void> {
-    const items: VSCode.QuickPickItem[] = [];
+    const items: StatusBarQuickPickItem[] = [];
 
+    const analysisIcon = this.automaticAnalysisEnabled ? '$(circle-outline)' : '$(circle-filled)';
+    const analysisLabel = this.automaticAnalysisEnabled ? 'Disable automatic analysis' : 'Enable automatic analysis';
+    const analysisCommand = this.automaticAnalysisEnabled
+      ? 'SonarLint.AutomaticAnalysis.Disable'
+      : 'SonarLint.AutomaticAnalysis.Enable';
     const focusIcon = this.focusOnNewCode ? '$(eye-closed)' : '$(eye)';
     const focusLabel = this.focusOnNewCode ? 'Focus on overall code' : 'Focus on new code';
     items.push({
-      label: `${focusIcon} ${focusLabel}`,
-      detail: this.focusOnNewCode
-        ? 'Switch to showing all issues'
-        : 'Switch to showing only issues in new code',
-      alwaysShow: true
-    });
-
-    const analysisIcon = this.automaticAnalysisEnabled ? '$(circle-filled)' : '$(circle-outline)';
-    const analysisLabel = this.automaticAnalysisEnabled ? 'Disable automatic analysis' : 'Enable automatic analysis';
-    items.push({
+      command: analysisCommand,
       label: `${analysisIcon} ${analysisLabel}`,
       detail: this.automaticAnalysisEnabled
         ? 'Stop analyzing files automatically'
@@ -112,28 +99,40 @@ export class StatusBarService {
       alwaysShow: true
     },
     {
+      command: Commands.NEW_CODE_DEFINITION,
+      label: `${focusIcon} ${focusLabel}`,
+      detail: this.focusOnNewCode
+        ? 'Switch to showing all issues'
+        : 'Switch to showing only issues in new code',
+      alwaysShow: true
+    },
+    {
       label: 'Flight Recorder',
       kind: VSCode.QuickPickItemKind.Separator
-    });
+    } as StatusBarQuickPickItem);
 
     if (this.flightRecorderStarted) {
       items.push({
+        command: Commands.STOP_FLIGHT_RECORDER,
         label: '$(debug-stop) Stop Flight Recorder',
         detail: 'Stop recording and create diagnostic archive',
         alwaysShow: true
       },
       {
+        command: Commands.DUMP_BACKEND_THREADS,
         label: '$(debug-line-by-line) Capture Thread Dump',
         detail: 'Capture current thread dump using jstack',
         alwaysShow: true
       },
       {
+        command: Commands.CAPTURE_HEAP_DUMP,
         label: '$(database) Capture Heap Dump',
         detail: 'Capture heap dump using jcmd (may be large)',
         alwaysShow: true
       });
     } else {
       items.push({
+        command: Commands.START_FLIGHT_RECORDER,
         label: '$(record) Start Flight Recorder',
         detail: 'Start capturing diagnostic data locally',
         alwaysShow: true
@@ -150,28 +149,7 @@ export class StatusBarService {
     }
   }
 
-  private async handleQuickPickSelection(item: VSCode.QuickPickItem): Promise<void> {
-    if (item.label.includes('Focus on')) {
-      // Toggle focus on new code
-      await VSCode.commands.executeCommand(Commands.NEW_CODE_DEFINITION);
-    } else if (item.label.includes('automatic analysis')) {
-      // Toggle automatic analysis
-      const command = this.automaticAnalysisEnabled
-        ? 'SonarLint.AutomaticAnalysis.Disable'
-        : 'SonarLint.AutomaticAnalysis.Enable';
-      await VSCode.commands.executeCommand(command);
-    } else if (item.label.includes('Start Flight Recorder')) {
-      // Start flight recorder
-      await VSCode.commands.executeCommand(Commands.START_FLIGHT_RECORDER);
-    } else if (item.label.includes('Stop Flight Recorder')) {
-      // Stop flight recorder
-      await VSCode.commands.executeCommand(Commands.STOP_FLIGHT_RECORDER);
-    } else if (item.label.includes('Capture Thread Dump')) {
-      // Capture thread dump
-      await VSCode.commands.executeCommand(Commands.DUMP_BACKEND_THREADS);
-    } else if (item.label.includes('Capture Heap Dump')) {
-      // Capture heap dump
-      await VSCode.commands.executeCommand(Commands.CAPTURE_HEAP_DUMP);
-    }
+  private async handleQuickPickSelection(item: StatusBarQuickPickItem): Promise<void> {
+    await VSCode.commands.executeCommand(item.command);
   }
 }

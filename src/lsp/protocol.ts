@@ -508,14 +508,6 @@ export namespace ExtendedClient {
     export const type = new lsp.NotificationType<NotifyInvalidTokenParams>('sonarlint/notifyInvalidToken');
   }
 
-  export interface FlightRecorderStartedParams {
-    sessionId: string;
-  }
-
-  export namespace FlightRecorderStartedNotification {
-    export const type = new lsp.NotificationType<FlightRecorderStartedParams>('sonarlint/flightRecorderStarted');
-  }
-
   export interface EmbeddedServerStartedParams {
     port: number;
   }
@@ -1012,10 +1004,6 @@ export interface GetHookScriptContentResponse {
 
   export interface FindingsFilteredParams {
     filterType: string;
-  }
-
-  export namespace DumpThreadsNotification {
-    export const type = new lsp.NotificationType('sonarlint/dumpThreads');
   }
 
   export namespace LabsExternalLinkClicked {
