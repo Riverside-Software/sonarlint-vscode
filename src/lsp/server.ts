@@ -25,17 +25,17 @@ export async function languageServerCommand(
 
   const params = [];
   if (DEBUG) {
-    params.push('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000,quiet=y');
-    params.push('-Dsonarlint.telemetry.disabled=true');
-    params.push('-Dsonarlint.monitoring.disabled=true');
+    params.push(
+      '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8000,quiet=y',
+      '-Dsonarlint.telemetry.disabled=true'
+    );
+  } else {
+    params.push('-Dsonarlint.monitoring.enabled=true');
   }
 
   const sonarLintConfiguration = getSonarLintConfiguration();
   const vmargs = sonarLintConfiguration.get('ls.vmargs', '');
   parseVMargs(params, vmargs);
-  if (sonarLintConfiguration.get('startFlightRecorder', false)) {
-    params.push('-Dsonarlint.flightrecorder.enabled=true');
-  }
 
   params.push('-jar', serverJar);
   params.push('-stdio');

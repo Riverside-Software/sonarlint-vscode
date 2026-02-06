@@ -1,3 +1,16 @@
+## 4.40
+
+* Update Text & Secrets analyzer 2.36 -> 2.38
+* Update CFamily analyzer 6.76 -> 6.77
+* Upadte XML analyzer 2.14.2 to [2.15](https://github.com/SonarSource/sonar-xml/releases/tag/2.15.0.7513)
+* Update IaC analyzer 2.3 -> 2.5
+* Update PHP analyzer 3.53 -> [3.54](https://github.com/SonarSource/sonar-php/releases/tag/3.54.0.15452)
+* Update Go analyzer 1.31 -> 1.32
+* Update C# analyzer 10.17 -> [10.18](https://github.com/SonarSource/sonar-dotnet/releases/tag/10.18.0.131500)
+* Bugfix - Can't setup SonarQube Cloud connection when there are many organisations to pick from
+* Enable AI Agent configurations for Kiro
+* Capture data locally with flight recorder
+
 ## 4.39
 
 * Update Python analyzer 5.15 -> 5.16
@@ -10,7 +23,7 @@
 
 * Update Python analyzer 5.14.2 -> 5.15
 * Update CFamily analyzer 6.75.1 -> 6.76
-* Update Text & Secrets analyzer 234 -> 2.36
+* Update Text & Secrets analyzer 2.34 -> 2.36
 * Update C# analyzer 10.16.2 -> [10.17](https://github.com/SonarSource/sonar-dotnet/releases/tag/10.17.0.131074)
 * Update IaC analyzer 2.2 -> [2.3](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2027050%20ORDER%20BY%20created%20ASC)
 

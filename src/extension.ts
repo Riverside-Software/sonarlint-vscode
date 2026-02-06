@@ -8,6 +8,7 @@
 
 // Must be kept at the top for Node instrumentation to work correctly
 import { MonitoringService } from './monitoring/monitoring';
+import { ProcessManager } from './monitoring/processManager';
 
 import * as ChildProcess from 'node:child_process';
 import * as Path from 'node:path';
@@ -70,10 +71,10 @@ import { SetUpConnectedModeTool } from './languageModelTools/setUpConnectedModeT
 import { AnalyzeFileTool } from './languageModelTools/analyzeFileTool';
 import { TaintVulnerabilityDecorator } from './issue/taintVulnerabilityDecorator';
 import { AutomaticAnalysisService } from './settings/automaticAnalysis';
-import { FlightRecorderService } from './monitoring/flightrecorder';
 import { onEmbeddedServerStarted } from './aiAgentsConfiguration/mcpServerConfig';
 import { IdeLabsFlagManagementService } from './labs/ideLabsFlagManagementService';
 import { LabsWebviewProvider } from './labs/labsWebviewProvider';
+import { StatusBarService } from './statusbar/statusBar';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -107,6 +108,10 @@ async function runJavaServer(context: VSCode.ExtensionContext): Promise<StreamIn
     const { command, args } = await languageServerCommand(context, requirements);
     logToSonarLintOutput(`Executing ${command} ${args.join(' ')}`);
     const process = ChildProcess.spawn(command, args);
+
+    // Register process with ProcessManager for flight recorder diagnostics
+    ProcessManager.instance.setLanguageServerProcess(process);
+
     process.stderr.on('data', function (data) {
       logWithPrefix(data, '[stderr]');
     });
@@ -233,6 +238,7 @@ export async function activate(context: VSCode.ExtensionContext) {
 
   ConnectionSettingsService.init(context, languageClient);
   NewCodeDefinitionService.init(context);
+  StatusBarService.init(context);
   FileSystemServiceImpl.init();
   SharedConnectedModeSettingsService.init(languageClient, FileSystemServiceImpl.instance, context);
   BindingService.init(languageClient, context.workspaceState, ConnectionSettingsService.instance, SharedConnectedModeSettingsService.instance);
@@ -242,7 +248,7 @@ export async function activate(context: VSCode.ExtensionContext) {
   });
   FixSuggestionService.init(languageClient);
   IdeLabsFlagManagementService.init(context);
-  
+
   ContextManager.instance.initializeContext(context);
 
   FindingsTreeDataProvider.init(context, languageClient);
@@ -255,22 +261,17 @@ export async function activate(context: VSCode.ExtensionContext) {
   installCustomRequestHandlers(context);
   initializeLanguageModelTools(context);
 
-  const referenceBranchStatusItem = VSCode.window.createStatusBarItem(VSCode.StatusBarAlignment.Left, 1);
-  const automaticAnalysisStatusItem = VSCode.window.createStatusBarItem(VSCode.StatusBarAlignment.Left, 2);
-
-  const scm = await initScm(languageClient, referenceBranchStatusItem);
+  const scm = await initScm(languageClient);
   context.subscriptions.push(scm);
   context.subscriptions.push(
     languageClient.onNotification(ExtendedClient.SetReferenceBranchNameForFolderNotification.type, params => {
       scm.setReferenceBranchName(VSCode.Uri.parse(params.folderUri), params.branchName);
     })
   );
-  context.subscriptions.push(referenceBranchStatusItem);
-  context.subscriptions.push(automaticAnalysisStatusItem);
 
   VSCode.window.onDidChangeActiveTextEditor(e => {
-    scm.updateReferenceBranchStatusItem(e);
-    NewCodeDefinitionService.instance.updateNewCodeStatusBarItem(e);
+    const currentBranch = scm.getReferenceBranchNameForFile(e?.document?.uri);
+    StatusBarService.instance.updateReferenceBranch(currentBranch);
     FindingsTreeDataProvider.instance.refresh();
   });
 
@@ -323,8 +324,12 @@ export async function activate(context: VSCode.ExtensionContext) {
     }
   }));
 
-  const automaticAnalysisService = new AutomaticAnalysisService(automaticAnalysisStatusItem, findingsView);
+  const automaticAnalysisService = new AutomaticAnalysisService(findingsView);
   automaticAnalysisService.updateAutomaticAnalysisStatusBarAndFindingsViewMessage();
+
+  const initialBranch = scm.getReferenceBranchNameForFile(VSCode.window.activeTextEditor?.document?.uri);
+  StatusBarService.instance.updateReferenceBranch(initialBranch);
+  NewCodeDefinitionService.instance.updateFocusOnNewCodeState();
 
   VSCode.workspace.onDidChangeConfiguration(async event => {
     if (event.affectsConfiguration('sonarlint-abl.rules')) {
@@ -375,8 +380,6 @@ export async function activate(context: VSCode.ExtensionContext) {
 
   const commandsManager = new CommandsManager(context, languageClient, allRulesTreeDataProvider, allRulesView, allConnectionsTreeDataProvider, allConnectionsView, aiAgentsConfigurationTreeDataProvider);
   commandsManager.registerCommands();
-
-  automaticAnalysisStatusItem.show();
   
   // Update badge when tree data changes
   context.subscriptions.push(
@@ -534,9 +537,6 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
   languageClient.onNotification(ExtendedClient.SuggestConnection.type, (params) => SharedConnectedModeSettingsService.instance.handleSuggestConnectionNotification(params.suggestionsByConfigScopeId));
   languageClient.onRequest(ExtendedClient.IsOpenInEditor.type, fileUri => {
     return VSCode.workspace.textDocuments.some(doc => code2ProtocolConverter(doc.uri) === fileUri);
-  });
-  languageClient.onNotification(ExtendedClient.FlightRecorderStartedNotification.type, (params) => {
-    FlightRecorderService.instance.onFlightRecorderStarted(params.sessionId);
   });
   languageClient.onNotification(ExtendedClient.EmbeddedServerStartedNotification.type, (params) => {
     onEmbeddedServerStarted(params.port);
