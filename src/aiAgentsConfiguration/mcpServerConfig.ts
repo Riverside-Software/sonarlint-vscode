@@ -61,8 +61,8 @@ export function getCurrentSonarQubeMCPServerConfig(): MCPServerConfig | undefine
   const configPath = getMCPConfigPath();
   const config = readMCPConfig(configPath);
   return currentAgent === AGENT.GITHUB_COPILOT
-    ? (config as MCPConfigurationVSCode).servers.sonarqube
-    : (config as MCPConfigurationOthers).mcpServers.sonarqube;
+    ? (config as MCPConfigurationVSCode).servers.cabl
+    : (config as MCPConfigurationOthers).mcpServers.cabl;
 }
 
 function readMCPConfig(configPath: string): MCPConfigurationOthers | MCPConfigurationVSCode {
@@ -92,9 +92,9 @@ function writeSonarQubeMCPConfig(sonarQubeMCPConfig: MCPServerConfig): void {
     const config = readMCPConfig(configPath);
 
     if (currentAgent === AGENT.GITHUB_COPILOT) {
-      (config as MCPConfigurationVSCode).servers.sonarqube = sonarQubeMCPConfig;
+      (config as MCPConfigurationVSCode).servers.cabl = sonarQubeMCPConfig;
     } else {
-      (config as MCPConfigurationOthers).mcpServers.sonarqube = sonarQubeMCPConfig;
+      (config as MCPConfigurationOthers).mcpServers.cabl = sonarQubeMCPConfig;
     }
 
     const configDir = path.dirname(configPath);
