@@ -40,6 +40,10 @@ export function highlightAllCodeSnippetsInDesc(htmlDescription, ruleLanguageKey,
   const preTagsNoDiff = getNonDiffCodeSnippetsToHighlight(doc);
   const languageKey = sonarToHighlightJsLanguageKeyMapping(ruleLanguageKey);
 
+  // OpenEdge is not supported by highlight.js; return directly unmodified documentation and avoid logging an exception
+  if (languageKey == 'oe')
+    return doc.toString();
+
   try {
     preTagsNoDiff.forEach(pre => {
       const highlightedCode = hljs.highlight(pre.textContent, { language: languageKey, ignoreIllegals: true });
