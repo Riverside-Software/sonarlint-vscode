@@ -202,6 +202,14 @@ export class SecondaryLocationsTree implements vscode.TreeDataProvider<LocationT
   }
 
   private highlightSecondaryLocations(locations: ExtendedClient.Location[], editor: vscode.TextEditor) {
+    // Different behavior in CABL and standard SonarQube for IDE: double-clicking on an issue with multiple locations
+    // reveals the location of the first location in the flow in SQ for IDE but not in CABL
+    // Cause is unknown; this workaround forces a call to editor.revealRange
+    const range = vscodeRange(locations[0].textRange);
+    if (isValidRange(range, editor.document)) {
+      editor.selection = new vscode.Selection(range.start, range.end);
+      editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+    }
     editor.setDecorations(
       SECONDARY_LOCATION_DECORATIONS,
       locations.map((l, i) => buildDecoration(new LocationItem(l, i + 1, this.rootItem), editor.document))
