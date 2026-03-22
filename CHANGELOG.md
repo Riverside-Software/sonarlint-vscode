@@ -1,3 +1,12 @@
+## 4.44
+
+* Update Text & Secrets analyzer 2.38 -> 2.41
+* Update C# analyzer 10.19 -> [10.20](https://github.com/SonarSource/sonar-dotnet/releases/tag/10.20.0.135146)
+* Update Java analyzer 8.23 -> [8.24](https://github.com/SonarSource/sonar-java/releases/tag/8.24.0.42567)
+* Update Python analyzer 5.17 -> 5.18
+* Upadte XML analyzer 2.15 to [2.16](https://github.com/SonarSource/sonar-xml/releases/tag/2.16.0.7616)
+* Update JS/TS/CSS analyzer 11.8 -> [12.0](https://github.com/SonarSource/SonarJS/releases/tag/12.0.0.38664)
+
 ## 4.43
 
 * Update C# analyzer 10.18 -> [10.19](https://github.com/SonarSource/sonar-dotnet/releases/tag/10.19.0.132793)
