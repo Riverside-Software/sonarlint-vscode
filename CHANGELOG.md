@@ -1,3 +1,12 @@
+## 4.43
+
+* Update C# analyzer 10.18 -> [10.19](https://github.com/SonarSource/sonar-dotnet/releases/tag/10.19.0.132793)
+* Update Python analyzer 5.16 -> 5.17
+* Update Go analyzer 1.32 -> 1.33
+* Update IaC analyzer 2.5 -> 2.6.1
+* Update CFamily analyzer 6.77 -> 6.78
+* Introduce Remediation Center - an experimental feature available inside SonarQube for IDE Labs. It streamlines your remediation workflow by bringing SonarQube (Server, Cloud) actions directly within a new IDE panel
+
 ## 4.42
 
 * Update JS/TS/CSS analyzer 11.7 -> [11.8](https://sonarsource.atlassian.net/issues/?jql=fixVersion%20%3D%2027110%20ORDER%20BY%20created%20ASC)

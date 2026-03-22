@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Advanced linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "4.42.99008",
+  "version": "4.43.0",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -222,7 +222,7 @@
           "order": 11,
           "type": "string",
           "markdownDescription": "Path to a Java Runtime Environment (17 or more recent) used to launch the SonarQube for VS Code Language Server.\n* On Windows, backslashes must be escaped, e.g. `C:\\\\Program Files\\\\Java\\\\jdk-17` \n* On macOS, this path should include the `/Contents/Home` directory, e.g `/Library/Java/JavaVirtualMachines/corretto-17.0.5/Contents/Home`",
-          "scope": "machine"
+          "scope": "resource"
         },
         "sonarlint-abl.ls.vmargs": {
           "order": 12,
@@ -399,6 +399,13 @@
         "command": "SonarLint.ABL.ClearLocations",
         "title": "Clear",
         "enablement": "view == sonarlint-abl.IssueLocations || view == sonarqube-abl.Findings"
+      },
+      {
+        "command": "SonarQube.ABL.ClearRemediationEvents",
+        "title": "Clear All",
+        "icon": "$(clear-all)",
+        "category": "CABL",
+        "enablement": "sonarqube-abl.ideLabsEnabled"
       },
       {
         "command": "SonarLint.ABL.ClearHotspotLocations",
@@ -643,14 +650,14 @@
         "title": "Enable Labs",
         "category": "SonarQube",
         "icon": "$(settings-gear)",
-        "enablement": "view == SonarQube.Labs && !sonarqube.ideLabsEnabled"
+        "enablement": "view == SonarQube.Labs && !sonarqube-abl.ideLabsEnabled"
       },
       {
         "command": "SonarQube.ABL.DisableLabs",
         "title": "Disable Labs",
         "category": "SonarQube",
         "icon": "$(settings-gear)",
-        "enablement": "view == SonarQube.Labs && sonarqube.ideLabsEnabled"
+        "enablement": "view == SonarQube.Labs && sonarqube-abl.ideLabsEnabled"
       }
     ],
     "viewsContainers": {
@@ -709,6 +716,13 @@
         {
           "id": "sonarqube-abl.Findings",
           "name": "CABL Findings"
+        },
+        {
+          "id": "sonarqube-abl.RemediationPanel",
+          "name": "Remediation Center",
+          "type": "webview",
+          "icon": "$(history)",
+          "when": "sonarqube-abl.ideLabsEnabled"
         }
       ]
     },
@@ -732,6 +746,11 @@
       {
         "view": "sonarqube-abl.Findings",
         "contents": "No SonarQube issues to display."
+      },
+      {
+        "view": "sonarqube-abl.RemediationPanel",
+        "contents": "No 'Open In IDE' events yet.\n\nClick 'Open In IDE' from SonarQube (Server, Cloud) to see events here.",
+        "when": "sonarqube-abl.ideLabsEnabled"
       }
     ],
     "menus": {
@@ -810,6 +829,11 @@
         {
           "submenu": "sonarqube-abl.FindingsFilterActive",
           "when": "view == sonarqube-abl.Findings && sonarqube-abl.findingsFilter != filter-all",
+          "group": "navigation"
+        },
+        {
+          "command": "SonarQube.ABL.ClearRemediationEvents",
+          "when": "view == sonarqube-abl.RemediationPanel && sonarqube-abl.ideLabsEnabled",
           "group": "navigation"
         }
       ],
@@ -979,7 +1003,7 @@
       "scm/resourceGroup/context": [
         {
           "command": "SonarLint.ABL.AnalyzeVCSChangedFiles",
-          "when": "sonarqube.ideLabsEnabled",
+          "when": "sonarqube-abl.ideLabsEnabled",
           "group": "inline"
         }
       ]
