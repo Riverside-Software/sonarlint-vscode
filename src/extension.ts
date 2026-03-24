@@ -269,7 +269,7 @@ export async function activate(context: VSCode.ExtensionContext) {
 
   remediationWebviewProvider = new RemediationWebviewProvider(context);
   context.subscriptions.push(
-    VSCode.window.registerWebviewViewProvider('SonarQube.RemediationPanel', remediationWebviewProvider)
+    VSCode.window.registerWebviewViewProvider('sonarqube-abl.RemediationPanel', remediationWebviewProvider)
   );
 
   installCustomRequestHandlers(context);
