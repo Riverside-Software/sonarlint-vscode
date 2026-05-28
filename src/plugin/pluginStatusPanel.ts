@@ -96,7 +96,7 @@ export class PluginStatusPanel {
 
   private static create(context: VSCode.ExtensionContext, languageClient: SonarLintExtendedLanguageClient) {
     const panel = VSCode.window.createWebviewPanel(
-      'sonarlint.PluginStatuses',
+      'sonarlint-abl.PluginStatuses',
       'Supported Languages & Analyzers',
       VSCode.ViewColumn.One,
       {
