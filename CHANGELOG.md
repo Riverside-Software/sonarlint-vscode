@@ -1,3 +1,33 @@
+## 5.2.3
+
+* Update Python analyzer 5.21 -> 5.22
+* Update JS/TS/CSS analyzer 12.3 -> [12.4](https://github.com/SonarSource/SonarJS/releases/tag/12.4.0.40770)
+* Update Go analyzer 1.36 -> 1.37
+* Update IaC analyzer 2.9 -> 2.10
+* Update Text & Secrets analyzer 2.42 -> 2.43
+* Update Java analyzer 8.28 -> [8.29](https://github.com/SonarSource/sonar-java/releases/tag/8.29.0.43460)
+* Update HTML analyzer 3.25 -> [3.26](https://github.com/SonarSource/sonar-html/releases/tag/3.26.0.7600)
+
+## 5.2.2
+
+* Fixed C# analysis in connected mode.
+* Fixed infinite plugin reload loop on failed on-demand artifact download.
+* Enable MISRA rules when connected to SonarQube Cloud.
+
+## 5.2.1
+
+* Fixed synchronization failure when the server returns dependency risks of Malware type.
+
+## 5.2
+
+* On-demand download of analysis dependencies for C#
+* Update JS/TS/CSS analyzer 12.2 -> [12.3](https://github.com/SonarSource/SonarJS/releases/tag/12.3.0.39932)
+* Update Go analyzer 1.33 -> 1.36
+* Update Java Symbolic Execution analyzer 8.16.3 -> 8.16.4
+* Update PHP analyzer 3.55 -> [3.56](https://github.com/SonarSource/sonar-php/releases/tag/3.56.0.15870)
+* Update IaC analyzer 2.8 -> 2.9
+* Update C# analyzer 10.23 -> [10.24](https://github.com/SonarSource/sonar-dotnet/releases/tag/10.24.0.138807)
+
 ## 5.1
 
 * Update Java analyzer 8.26 -> [8.27](https://github.com/SonarSource/sonar-java/releases/tag/8.27.0.43088) -> [8.28](https://github.com/SonarSource/sonar-java/releases/tag/8.28.0.43176)
