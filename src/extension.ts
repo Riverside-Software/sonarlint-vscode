@@ -77,6 +77,7 @@ import { LabsWebviewProvider } from './labs/labsWebviewProvider';
 import { StatusBarService } from './statusbar/statusBar';
 import { RemediationService } from './remediationPanel/remediationService';
 import { RemediationWebviewProvider } from './remediationPanel/remediationWebviewProvider';
+import { PluginStatusPanel } from './plugin/pluginStatusPanel';
 
 const DOCUMENT_SELECTOR = [
   { scheme: 'file', pattern: '**/*' },
@@ -409,7 +410,7 @@ export async function activate(context: VSCode.ExtensionContext) {
     })
   );
 
-  helpAndFeedbackTreeDataProvider = new HelpAndFeedbackTreeDataProvider();
+  helpAndFeedbackTreeDataProvider = new HelpAndFeedbackTreeDataProvider(context.subscriptions);
   helpAndFeedbackView = VSCode.window.createTreeView('sonarlint-abl.HelpAndFeedback', {
     treeDataProvider: helpAndFeedbackTreeDataProvider
   });
@@ -575,6 +576,11 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
   });
   languageClient.onRequest(ExtendedClient.HasJoinedIdeLabs.type, () => {
     return IdeLabsFlagManagementService.instance.isIdeLabsJoined();
+  });
+  languageClient.onNotification(ExtendedClient.DidChangePluginStatuses.type, params => {
+    if (PluginStatusPanel.isOpen()) {
+      PluginStatusPanel.refresh(params.pluginStatuses, params.configScopeId);
+    }
   });
 }
 

@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------------------------
  * SonarLint for VisualStudio Code
- * Copyright (C) 2017-2025 SonarSource SA
+ * Copyright (C) 2017-2025 SonarSource Sàrl
  * sonarlint@sonarsource.com
  * Licensed under the LGPLv3 License. See LICENSE.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
@@ -26,6 +26,7 @@ import {
 } from './connected/connectionsetup';
 import { SharedConnectedModeSettingsService } from './connected/sharedConnectedModeSettingsService';
 import { helpAndFeedbackLinkClicked } from './help/linkTelemetry';
+import { PluginStatusPanel } from './plugin/pluginStatusPanel';
 import {
   showHotspotDetails,
   changeHotspotStatus,
@@ -272,6 +273,9 @@ export class CommandsManager {
         if (agent) {
           openHookConfiguration(agent);
         }
+      }),
+      vscode.commands.registerCommand(Commands.SHOW_SUPPORTED_LANGUAGES, async () => {
+        await PluginStatusPanel.showSupportedLanguages(this.context, this.languageClient);
       })
     );
   }

@@ -1,3 +1,14 @@
+## 5.0
+
+* Require Java 21 to run the backend
+* Update HTML analyzer 3.22 -> [3.25](https://github.com/SonarSource/sonar-html/releases/tag/3.25.0.7473)
+* Update Text & Secrets analyzer 2.41 -> 2.42
+* Update IaC analyzer 2.6.1 -> 2.8
+* Update Python analyzer 5.19 -> 5.20
+* Update JS/TS/CSS analyzer 12.0 -> [12.2](https://github.com/SonarSource/SonarJS/releases/tag/12.2.0.39785)
+* Update CFamily analyzer 6.78 -> 6.79
+* Update C# analyzer 10.20 -> [10.21](https://github.com/SonarSource/sonar-dotnet/releases/tag/10.21.0.135717)
+
 ## 4.45
 
 * Update Java analyzer 8.24 -> [8.26](https://github.com/SonarSource/sonar-java/releases/tag/8.26.0.42915)

@@ -108,4 +108,6 @@ export namespace Commands {
 
   export const ENABLE_LABS = 'SonarQube.ABL.EnableLabs';
   export const DISABLE_LABS = 'SonarQube.ABL.DisableLabs';
+
+  export const SHOW_SUPPORTED_LANGUAGES = 'SonarQube.ABL.ShowSupportedLanguages';
 }

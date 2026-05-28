@@ -1,6 +1,6 @@
 /* --------------------------------------------------------------------------------------------
  * SonarLint for VisualStudio Code
- * Copyright (C) 2017-2025 SonarSource SA
+ * Copyright (C) 2017-2025 SonarSource Sàrl
  * sonarlint@sonarsource.com
  * Licensed under the LGPLv3 License. See LICENSE.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
@@ -26,12 +26,22 @@ export interface LabsFeature {
 
 export const LABS_FEATURES: LabsFeature[] = [
   {
+    id: 'supported_languages',
+    title: 'Supported Languages & Analyzers',
+    description:
+      'View the status of all active analyzers for your current connection. This dashboard provides visibility into which languages are being analyzed and allows you to troubleshoot analyzers if a failure occurs.',
+    imageFile: 'labs/supported_languages.png',
+    tags: [FeatureTag.NEW, FeatureTag.EXPERIMENTAL],
+    learnMoreUrl: 'https://docs.sonarsource.com/sonarqube-for-vs-code',
+    feedbackUrl: 'https://forms.gle/Vr6UDXuDJzonsPjeA'
+  },
+  {
     id: 'remediation_center',
     title: 'Remediation Center',
     description:
       'Streamline your remediation workflow by bringing SonarQube (Server, Cloud) actions directly within a new IDE panel. Manage AI CodeFix suggestions and server issue reviews without switching context.',
     imageFile: 'labs/labs_remediation_center.png',
-    tags: [FeatureTag.NEW, FeatureTag.EXPERIMENTAL],
+    tags: [FeatureTag.EXPERIMENTAL],
     learnMoreUrl: 'https://docs.sonarsource.com/sonarqube-for-vs-code/using/fixing-issues#remediation-center',
     feedbackUrl: 'https://forms.gle/Y8vnvKTfgYH859dJ9'
   },
