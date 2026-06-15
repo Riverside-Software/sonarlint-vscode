@@ -319,13 +319,13 @@
       },
       {
         "command": "SonarLint.ABL.AnalyseOpenFile",
-        "title": "Analyze Current File with SonarQube",
+        "title": "Analyze Current File with CABL",
         "category": "CABL",
         "icon": "$(sonarqube-analysis)"
       },
       {
         "command": "SonarLint.ABL.AnalyzeVCSChangedFiles",
-        "title": "Analyze Changed Files with SonarQube",
+        "title": "Analyze Changed Files with CABL",
         "category": "CABL",
         "icon": "$(sonarqube-analysis)",
         "enablement": "sonarqube-abl.ideLabsEnabled"
