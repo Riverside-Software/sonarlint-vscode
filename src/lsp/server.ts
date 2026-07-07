@@ -52,6 +52,7 @@ export function languageServerCommand(
   // params.push(Path.resolve(context.extensionPath, 'analyzers', 'sonarlintomnisharp.jar'));
   params.push(Path.resolve(context.extensionPath, 'analyzers', 'sonaroe.jar'));
   params.push(Path.resolve(context.extensionPath, 'analyzers', 'progress.jar'));
+  params.push(Path.resolve(context.extensionPath, 'analyzers', 'rsswrules.jar'));
   // await maybeAddCFamilyJar(params);
 
   return { command: javaExecutablePath, args: params, transport: TransportKind.stdio };

@@ -26,6 +26,7 @@ pipeline {
             sh "mkdir analyzers server resources"
             sh "$MVN_HOME/bin/mvn -U -B -ntp dependency:get -Dartifact=eu.rssw.sonar.openedge:sonar-openedge-plugin:${cablVersion} -Dtransitive=false && cp $HOME/.m2/repository/eu/rssw/sonar/openedge/sonar-openedge-plugin/${cablVersion}/sonar-openedge-plugin-${cablVersion}.jar analyzers/sonaroe.jar"
             sh "$MVN_HOME/bin/mvn -U -B -ntp dependency:get -Dartifact=eu.rssw.sonar.openedge:progress-rules-plugin:${prgsRulesVersion} -Dtransitive=false && cp $HOME/.m2/repository/eu/rssw/sonar/openedge/progress-rules-plugin/${prgsRulesVersion}/progress-rules-plugin-${prgsRulesVersion}.jar analyzers/progress.jar"
+            sh "$MVN_HOME/bin/mvn -U -B -ntp dependency:get -Dartifact=eu.rssw.sonar.openedge:riverside-rules-plugin:3.9.0-SNAPSHOT -Dtransitive=false && cp $HOME/.m2/repository/eu/rssw/sonar/openedge/riverside-rules-plugin/3.9.0-SNAPSHOT/riverside-rules-plugin-3.9.0-SNAPSHOT.jar analyzers/rsswrules.jar"
             sh "$MVN_HOME/bin/mvn -U -B -ntp dependency:get -Dartifact=org.sonarsource.sonarlint.ls:sonarlint-language-server:${slintlsVersion} -Dtransitive=false && cp $HOME/.m2/repository/org/sonarsource/sonarlint/ls/sonarlint-language-server/${slintlsVersion}/sonarlint-language-server-${slintlsVersion}.jar server/sonarlint-ls.jar"
             // Curl -L in order to follow redirects
             // sh "curl -s -L -o resources/jre-windows.zip https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.3%2B9/OpenJDK21U-jre_x64_windows_hotspot_21.0.3_9.zip"
