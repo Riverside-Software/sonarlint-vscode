@@ -18,7 +18,7 @@ Object.defineProperty(constants, 'LATEST_JRE', {
 });
 
 Object.defineProperty(constants, 'TARGETED_PLATFORMS', {
-  value: ['win32-x64', 'linux-x64', 'darwin-x64', 'darwin-arm64'],
+  value: ['win32-x64', 'linux-x64'],
   writable: false
 });
 

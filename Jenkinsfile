@@ -23,14 +23,11 @@ pipeline {
           def prgsRulesVersion = "3.9.0-SNAPSHOT"
           def slintlsVersion = "5.3.99001"
           withEnv(["MVN_HOME=${tool name: 'Maven 3', type: 'hudson.tasks.Maven$MavenInstallation'}", "JAVA_HOME=${tool name: 'JDK17', type: 'jdk'}"]) {
-            sh "mkdir analyzers server resources"
+            sh "mkdir analyzers server"
             sh "$MVN_HOME/bin/mvn -U -B -ntp dependency:get -Dartifact=eu.rssw.sonar.openedge:sonar-openedge-plugin:${cablVersion} -Dtransitive=false && cp $HOME/.m2/repository/eu/rssw/sonar/openedge/sonar-openedge-plugin/${cablVersion}/sonar-openedge-plugin-${cablVersion}.jar analyzers/sonaroe.jar"
             sh "$MVN_HOME/bin/mvn -U -B -ntp dependency:get -Dartifact=eu.rssw.sonar.openedge:progress-rules-plugin:${prgsRulesVersion} -Dtransitive=false && cp $HOME/.m2/repository/eu/rssw/sonar/openedge/progress-rules-plugin/${prgsRulesVersion}/progress-rules-plugin-${prgsRulesVersion}.jar analyzers/progress.jar"
             sh "$MVN_HOME/bin/mvn -U -B -ntp dependency:get -Dartifact=eu.rssw.sonar.openedge:riverside-rules-plugin:3.9.0-SNAPSHOT -Dtransitive=false && cp $HOME/.m2/repository/eu/rssw/sonar/openedge/riverside-rules-plugin/3.9.0-SNAPSHOT/riverside-rules-plugin-3.9.0-SNAPSHOT.jar analyzers/rsswrules.jar"
             sh "$MVN_HOME/bin/mvn -U -B -ntp dependency:get -Dartifact=org.sonarsource.sonarlint.ls:sonarlint-language-server:${slintlsVersion} -Dtransitive=false && cp $HOME/.m2/repository/org/sonarsource/sonarlint/ls/sonarlint-language-server/${slintlsVersion}/sonarlint-language-server-${slintlsVersion}.jar server/sonarlint-ls.jar"
-            // Curl -L in order to follow redirects
-            // sh "curl -s -L -o resources/jre-windows.zip https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.3%2B9/OpenJDK21U-jre_x64_windows_hotspot_21.0.3_9.zip"
-            // sh "curl -s -L -o resources/jre-linux.tar.gz https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.3%2B9/OpenJDK21U-jre_x64_linux_hotspot_21.0.3_9.tar.gz"
           }
         }
       }
@@ -49,13 +46,11 @@ pipeline {
           withSonarQubeEnv('RSSW2') {
             sh 'node --version && npm install webpack'
             sh 'npm run compile'
-            sh 'npm run webpack'
             // sh 'npm run cyclonedx-run -- --output-file sonarlint-vscode-4.5.1.sbom-cyclonedx.json'
-            sh 'npx @vscode/vsce package'
-            // sh 'unzip -q resources/jre-windows.zip && mv jdk-21.0.3+9-jre jre'
-            // sh 'npx @vscode/vsce package --target win32-x64'
-            // sh 'rm -rf jre/ && tar xfz resources/jre-linux.tar.gz && mv jdk-21.0.3+9-jre jre'
-            // sh 'npx @vscode/vsce package --target linux-x64'
+            // Builds 3 VSIX packages: a JVM-less universal one, plus win32-x64 and linux-x64
+            // packages each bundling their own JRE (downloaded on the fly). See build-sonarlint/package-all.mjs
+            // and build-sonarlint/constants.mjs (TARGETED_PLATFORMS) to add/remove target platforms.
+            sh 'npm run package-all'
           }
           archiveArtifacts artifacts: '*.vsix'
         }
