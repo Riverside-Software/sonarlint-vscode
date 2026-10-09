@@ -219,7 +219,7 @@ export class CommandsManager {
         void this.languageClient.sendNotification(ExtendedServer.AnalyzeVCSChangedFiles.type, {
           configScopeIds: workspaceFolderUris
         });
-        void vscode.commands.executeCommand('SonarQube.Findings.focus');
+        void vscode.commands.executeCommand('sonarqube-abl.Findings.focus');
       }),
       vscode.commands.registerCommand(
         Commands.FOCUS_ON_CONNECTION,

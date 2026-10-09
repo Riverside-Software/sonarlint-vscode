@@ -18,7 +18,7 @@ import { CommandsManager } from '../../src/commandsManager';
 import * as mcpServerConfig from '../../src/aiAgentsConfiguration/mcpServerConfig';
 
 suite('ANALYZE_VCS_CHANGED_FILES command', () => {
-  const FINDINGS_FOCUS_COMMAND = 'SonarQube.Findings.focus';
+  const FINDINGS_FOCUS_COMMAND = 'sonarqube-abl.Findings.focus';
   let sendNotificationSpy: sinon.SinonSpy;
   let executeCommandSpy: sinon.SinonSpy;
   let workspaceFoldersStub: sinon.SinonStub;

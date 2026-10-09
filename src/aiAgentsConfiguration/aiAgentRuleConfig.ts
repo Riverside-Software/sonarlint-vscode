@@ -99,7 +99,7 @@ export async function openSonarQubeRulesFile(offerCreation = true): Promise<void
       );
 
       if (action === 'Create Rules File') {
-        vscode.commands.executeCommand('SonarLint.AI.IntroduceSonarQubeRulesFile');
+        vscode.commands.executeCommand('sonarlint-abl.AI.IntroduceSonarQubeRulesFile');
       }
       return;
     }

@@ -290,7 +290,7 @@ export class BindingService {
     VSCode.window.showInformationMessage(`Workspace folder '${workspaceFolder.name}/' has been bound with project '${projectKey}'`);
 
     // Focus on the Findings view
-    VSCode.commands.executeCommand('SonarQube.Findings.focus');
+    VSCode.commands.executeCommand('sonarqube-abl.Findings.focus');
   }
 
   async saveManualBinding(projectKey: string, workspaceFolder: VSCode.WorkspaceFolder, connectionId?: string) {
