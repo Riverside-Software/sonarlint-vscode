@@ -214,8 +214,7 @@ export async function activate(context: VSCode.ExtensionContext) {
             remoteName: cleanRemoteName(VSCode.env.remoteName),
             uiKind: VSCode.UIKind[VSCode.env.uiKind],
             installTime,
-            isTelemetryEnabled: VSCode.env.isTelemetryEnabled,
-            ...(VSCode.env.isTelemetryEnabled && { machineId: VSCode.env.machineId })
+            isTelemetryEnabled: VSCode.env.isTelemetryEnabled
           },
         },
         enableNotebooks: true,
