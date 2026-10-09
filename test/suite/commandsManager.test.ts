@@ -10,9 +10,12 @@ import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 import { expect } from 'chai';
 import { ExtendedServer } from '../../src/lsp/protocol';
+import { AiIntegration } from '../../src/lsp/aiIntegrationProtocol';
 import { Commands } from '../../src/util/commands';
-import { LanguageClient } from 'vscode-languageclient/lib/node/main';
+import { LanguageClient } from 'vscode-languageclient/node';
 import { SETUP_TEARDOWN_HOOK_TIMEOUT } from './commons';
+import { CommandsManager } from '../../src/commandsManager';
+import * as mcpServerConfig from '../../src/aiAgentsConfiguration/mcpServerConfig';
 
 suite('ANALYZE_VCS_CHANGED_FILES command', () => {
   const FINDINGS_FOCUS_COMMAND = 'SonarQube.Findings.focus';
@@ -78,3 +81,41 @@ suite('ANALYZE_VCS_CHANGED_FILES command', () => {
   });
 });
 
+suite('CONFIGURE_MCP_SERVER command', () => {
+  teardown(() => sinon.restore());
+
+  test('refreshes the AI integrations view around MCP setup', async () => {
+    let configureCommand: ((connection?: unknown) => Promise<void>) | undefined;
+    sinon.stub(vscode.commands, 'registerCommand').callsFake((command, callback) => {
+      if (command === Commands.CONFIGURE_MCP_SERVER) {
+        configureCommand = callback as typeof configureCommand;
+      }
+      return { dispose: () => undefined };
+    });
+    sinon.stub(mcpServerConfig, 'isMCPSetupInProgress').returns(false);
+    const configureStub = sinon.stub(mcpServerConfig, 'configureMCPServer').resolves({
+      status: AiIntegration.AiIntegrationActionStatus.SUCCEEDED
+    });
+    const refreshStub = sinon.stub().resolves();
+    const postActionRefreshStub = sinon.stub().resolves();
+    const actionNotification = sinon.stub().resolves();
+    const context = { subscriptions: [] } as unknown as vscode.ExtensionContext;
+    const manager = new CommandsManager(
+      context,
+      { aiIntegrationAction: actionNotification } as never,
+      undefined as never,
+      undefined as never,
+      undefined as never,
+      undefined as never,
+      { refresh: refreshStub, refreshAfterAction: postActionRefreshStub } as never
+    );
+    manager.registerCommands();
+
+    expect(configureCommand).to.not.be.undefined;
+    await configureCommand!();
+    expect(refreshStub.called).to.be.false;
+    expect(postActionRefreshStub.calledOnce).to.be.true;
+    expect(configureStub.calledOnce).to.be.true;
+    expect(actionNotification.getCalls().map(call => call.args[0].status)).to.deep.equal(['STARTED', 'SUCCEEDED']);
+  });
+});

@@ -40,7 +40,7 @@ export async function migrateConnectedModeSettings(
   const sqConnections = settings.get<SonarQubeConnection[]>(`${CONNECTIONS_SECTION}.${SONARQUBE}`, []);
   const scConnections = settings.get<SonarCloudConnection[]>(`${CONNECTIONS_SECTION}.${SONARCLOUD}`, []);
   if (await hasUnmigratedConnections(sqConnections, scConnections, settingsService)) {
-    suggestMigrationToSecureStorage(sqConnections, scConnections, settingsService);
+    await suggestMigrationToSecureStorage(sqConnections, scConnections, settingsService);
   }
 }
 
@@ -212,6 +212,7 @@ export class ConnectionSettingsService {
       .update(SONARCLOUD_CONNECTIONS_CATEGORY, connections, VSCode.ConfigurationTarget.Global);
 
     return newConnection.connectionId; */
+    return null;
   }
 
   async updateSonarCloudConnection(connection: SonarCloudConnection) {

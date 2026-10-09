@@ -1,3 +1,20 @@
+## 6.0.1
+
+* Fixed an issue where opening VS Code could overwrite custom SonarQube MCP server settings.
+
+## 6.0
+* Introduce new AI Integrations panel for SonarQube CLI and SonarQube MCP Server integrations
+* Increase minimal supported VSCode version to 1.100.0
+* Increase minimal supported SonarQube Server version to 2025.1
+* Update PHP analyzer 3.60 -> [4.0](https://github.com/SonarSource/sonar-php/releases/tag/4.0.0.16889) -> [4.1](https://github.com/SonarSource/sonar-php/releases/tag/4.1.0.16998)
+* Update Text & Secrets analyzer 2.50 -> [2.51](https://github.com/SonarSource/sonar-text/releases/tag/2.51.0.13430)
+* Update Java analyzer 8.41 -> [8.43](https://github.com/SonarSource/sonar-java/releases/tag/8.43.0.47668) -> [8.44](https://github.com/SonarSource/sonar-java/releases/tag/8.44.0.48651)
+* Update IaC analyzer 2.18 -> [2.19](https://github.com/SonarSource/sonar-iac/releases/tag/2.19.0.23980) -> [2.20](https://github.com/SonarSource/sonar-iac/releases/tag/2.20.0.24052)
+* Update Go analyzer 1.44 -> [1.45](https://github.com/SonarSource/sonar-go/releases/tag/1.45.0.9057) -> [1.46](https://github.com/SonarSource/sonar-go/releases/tag/1.46.0.9107)
+* Update JS/TS/CSS analyzer 13.9 -> [14.0](https://github.com/SonarSource/SonarJS/releases/tag/14.0.0.46108)
+* Update Python analyzer 5.31 -> [5.32](https://github.com/SonarSource/sonar-python/releases/tag/5.32.0.37250)
+* Update C# analyzer 1.44 -> [1.45](https://github.com/SonarSource/sonarlint-omnisharp/releases/tag/1.45.0.102027) -> [1.46](https://github.com/SonarSource/sonarlint-omnisharp/releases/tag/1.46.0.102069) -> [1.47](https://github.com/SonarSource/sonarlint-omnisharp/releases/tag/1.47.0.102096)
+
 ## 5.10
 * Update IaC analyzer 2.15 -> [2.16](https://github.com/SonarSource/sonar-iac/releases/tag/2.16.0.22905) -> [2.17](https://github.com/SonarSource/sonar-iac/releases/tag/2.17.0.23172) -> [2.18](https://github.com/SonarSource/sonar-iac/releases/tag/2.18.0.23895)
 * Update JS/TS/CSS analyzer 13.8 -> [13.9](https://github.com/SonarSource/SonarJS/releases/tag/13.9.0.44793)

@@ -166,7 +166,7 @@ export namespace ExtendedClient {
   }
 
   export namespace ShowNotificationForFirstSecretsIssueNotification {
-    export const type = new lsp.NotificationType('sonarlint/showNotificationForFirstSecretsIssue');
+    export const type = new lsp.NotificationType0('sonarlint/showNotificationForFirstSecretsIssue');
   }
 
   export interface GetJavaConfigResponse {
@@ -199,15 +199,15 @@ export namespace ExtendedClient {
   }
 
   export namespace ShowSonarLintOutputNotification {
-    export const type = new lsp.NotificationType('sonarlint/showSonarLintOutput');
+    export const type = new lsp.NotificationType0('sonarlint/showSonarLintOutput');
   }
 
   export namespace OpenJavaHomeSettingsNotification {
-    export const type = new lsp.NotificationType('sonarlint/openJavaHomeSettings');
+    export const type = new lsp.NotificationType0('sonarlint/openJavaHomeSettings');
   }
 
   export namespace OpenPathToNodeSettingsNotification {
-    export const type = new lsp.NotificationType('sonarlint/openPathToNodeSettings');
+    export const type = new lsp.NotificationType0('sonarlint/openPathToNodeSettings');
   }
 
   export namespace BrowseToNotification {
@@ -311,7 +311,7 @@ export namespace ExtendedClient {
   }
 
   export namespace NeedCompilationDatabaseRequest {
-    export const type = new lsp.NotificationType('sonarlint/needCompilationDatabase');
+    export const type = new lsp.NotificationType0('sonarlint/needCompilationDatabase');
   }
 
   export interface ShouldAnalyseFileCheckResult {
@@ -348,7 +348,7 @@ export namespace ExtendedClient {
   }
 
   export namespace DoNotShowMissingRequirementsMessageAgain {
-    export const type = new lsp.NotificationType('sonarlint/doNotShowMissingRequirementsMessageAgain');
+    export const type = new lsp.NotificationType0('sonarlint/doNotShowMissingRequirementsMessageAgain');
   }
 
   export namespace MaybeShowWiderLanguageSupportNotification {
@@ -535,7 +535,6 @@ export namespace ExtendedClient {
  * SonarQube custom extensions to the LSP, server methods
  */
 export namespace ExtendedServer {
-
   export interface ConnectionCheckParams {
     connectionId?: string;
     token?: string;
@@ -680,7 +679,7 @@ export namespace ExtendedServer {
   }
 
   export namespace DependencyRiskInvestigatedLocally {
-    export const type = new lsp.NotificationType('sonarlint/dependencyRiskInvestigatedLocally');
+    export const type = new lsp.NotificationType0('sonarlint/dependencyRiskInvestigatedLocally');
   }
 
   export interface HelpAndFeedbackLinkClickedNotificationParams {
@@ -712,7 +711,7 @@ export namespace ExtendedServer {
   }
 
   export namespace ForgetFolderHotspots {
-    export const type = new lsp.NotificationType('sonarlint/forgetFolderHotspots');
+    export const type = new lsp.NotificationType0('sonarlint/forgetFolderHotspots');
   }
 
   export interface GetFilePatternsForAnalysisResponse {
@@ -945,7 +944,7 @@ export interface GetHookScriptContentResponse {
   }
 
   export namespace AddedManualBindings {
-    export const type = new lsp.NotificationType('sonarlint/addedManualBindings');
+    export const type = new lsp.NotificationType0('sonarlint/addedManualBindings');
   }
 
   export enum BindingSuggestionOrigin {
@@ -1035,7 +1034,7 @@ export interface GetHookScriptContentResponse {
     source: ArtifactSourceDto;
     actualVersion?: string;
     overriddenVersion?: string;
-    /** Version of the SonarQube Server that provided this plugin (e.g. "10.8.1"). Only set when source is SONARQUBE_SERVER. */
+    /** Version of the SonarQube Server that provided this plugin (e.g. "2025.1"). Only set when source is SONARQUBE_SERVER. */
     serverVersion?: string;
   }
 
@@ -1054,11 +1053,11 @@ export interface GetHookScriptContentResponse {
   }
 
   export namespace SupportedLanguagesPanelOpened {
-    export const type = new lsp.NotificationType('sonarlint/supportedLanguagesPanelOpened');
+    export const type = new lsp.NotificationType0('sonarlint/supportedLanguagesPanelOpened');
   }
 
   export namespace SupportedLanguagesPanelCtaClicked {
-    export const type = new lsp.NotificationType('sonarlint/supportedLanguagesPanelCtaClicked');
+    export const type = new lsp.NotificationType0('sonarlint/supportedLanguagesPanelCtaClicked');
   }
 
 }

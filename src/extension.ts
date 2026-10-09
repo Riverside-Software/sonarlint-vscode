@@ -26,7 +26,7 @@ import {
   HelpAndFeedbackLink,
   HelpAndFeedbackTreeDataProvider
 } from './help/helpAndFeedbackTreeDataProvider';
-import { AIAgentsConfigurationTreeDataProvider, AIAgentsConfigurationItem } from './aiAgentsConfiguration/aiAgentsConfigurationTreeDataProvider';
+import { AIAgentsConfigurationWebviewProvider } from './aiAgentsConfiguration/aiAgentsConfigurationWebviewProvider';
 import {
   showSecurityHotspot,
 } from './hotspot/hotspots';
@@ -71,7 +71,12 @@ import { SetUpConnectedModeTool } from './languageModelTools/setUpConnectedModeT
 import { AnalyzeFileTool } from './languageModelTools/analyzeFileTool';
 import { TaintVulnerabilityDecorator } from './issue/taintVulnerabilityDecorator';
 import { AutomaticAnalysisService } from './settings/automaticAnalysis';
-import { onEmbeddedServerStarted } from './aiAgentsConfiguration/mcpServerConfig';
+import {
+  onEmbeddedServerStarted,
+  getStandaloneMCPAgents,
+  scheduleCopilotActivationMcpRefresh
+} from './aiAgentsConfiguration/mcpServerConfig';
+import { COPILOT_ACTIVATION_DELAY_MS } from './aiAgentsConfiguration/aiAgentUtils';
 import { IdeLabsFlagManagementService } from './labs/ideLabsFlagManagementService';
 import { LabsWebviewProvider } from './labs/labsWebviewProvider';
 import { StatusBarService } from './statusbar/statusBar';
@@ -101,8 +106,7 @@ let findingsTreeDataProvider: FindingsTreeDataProvider;
 let findingsView: VSCode.TreeView<FindingsTreeViewItem>;
 let helpAndFeedbackTreeDataProvider: HelpAndFeedbackTreeDataProvider;
 let helpAndFeedbackView: VSCode.TreeView<HelpAndFeedbackLink>;
-let aiAgentsConfigurationTreeDataProvider: AIAgentsConfigurationTreeDataProvider;
-let aiAgentsConfigurationView: VSCode.TreeView<AIAgentsConfigurationItem>;
+let aiAgentsConfigurationWebviewProvider: AIAgentsConfigurationWebviewProvider;
 let remediationWebviewProvider: RemediationWebviewProvider;
 const currentProgress: Record<string, { progress: VSCode.Progress<{ increment?: number }>, resolve: () => void } | undefined> = {};
 
@@ -226,7 +230,7 @@ export async function activate(context: VSCode.ExtensionContext) {
         automaticAnalysis: VSCode.workspace.getConfiguration('sonarlint-abl').get('automaticAnalysis', true)
       };
     },
-    outputChannel: getLogOutput(),
+    outputChannel: getLogOutput() as LanguageClientOptions['outputChannel'],
     revealOutputChannelOn: 4, // never
   };
 
@@ -270,6 +274,15 @@ export async function activate(context: VSCode.ExtensionContext) {
   );
 
   installCustomRequestHandlers(context);
+  const refreshMcpAgentContext = () =>
+    getStandaloneMCPAgents(languageClient).catch(error =>
+      logToSonarLintOutput(`Could not detect agents supporting standalone MCP: ${String(error)}`)
+    );
+  void refreshMcpAgentContext();
+  const mcpContextRefreshTimer = setTimeout(() => {
+    void refreshMcpAgentContext();
+  }, COPILOT_ACTIVATION_DELAY_MS);
+  context.subscriptions.push(new VSCode.Disposable(() => clearTimeout(mcpContextRefreshTimer)));
   initializeLanguageModelTools(context);
 
   const scm = await initScm(languageClient);
@@ -368,26 +381,25 @@ export async function activate(context: VSCode.ExtensionContext) {
     }
     if (event.affectsConfiguration('sonarlint-abl')) {
       // only send notification to let language server pull the latest settings when the change is relevant
-      languageClient.sendNotification('workspace/didChangeConfiguration', { settings: null })
+      void languageClient.sendNotification('workspace/didChangeConfiguration', { settings: null })
     }
   });
 
   VSCode.workspace.onDidChangeWorkspaceFolders(async event => {
-    for (const removed of event.removed) {
-      FileSystemServiceImpl.instance.didRemoveWorkspaceFolder(removed);
-    }
+    await Promise.all(event.removed.map(removed => FileSystemServiceImpl.instance.didRemoveWorkspaceFolder(removed)));
 
     for (const added of event.added) {
-      FileSystemServiceImpl.instance.didAddWorkspaceFolder(added);
+      void FileSystemServiceImpl.instance.didAddWorkspaceFolder(added);
     }
   });
 
-
-  aiAgentsConfigurationTreeDataProvider = new AIAgentsConfigurationTreeDataProvider();
-  aiAgentsConfigurationView = VSCode.window.createTreeView('sonarlint-abl.AIAgentsConfiguration', {
-    treeDataProvider: aiAgentsConfigurationTreeDataProvider
-  });
-  context.subscriptions.push(aiAgentsConfigurationView);
+  aiAgentsConfigurationWebviewProvider = new AIAgentsConfigurationWebviewProvider(
+    context,
+    languageClient
+  );
+  context.subscriptions.push(
+    VSCode.window.registerWebviewViewProvider('sonarlint-abl.AIAgentsConfiguration', aiAgentsConfigurationWebviewProvider)
+  );
 
   allConnectionsTreeDataProvider = new AllConnectionsTreeDataProvider(languageClient);
 
@@ -396,7 +408,7 @@ export async function activate(context: VSCode.ExtensionContext) {
   });
   context.subscriptions.push(allConnectionsView);
 
-  const commandsManager = new CommandsManager(context, languageClient, allRulesTreeDataProvider, allRulesView, allConnectionsTreeDataProvider, allConnectionsView, aiAgentsConfigurationTreeDataProvider);
+  const commandsManager = new CommandsManager(context, languageClient, allRulesTreeDataProvider, allRulesView, allConnectionsTreeDataProvider, allConnectionsView, aiAgentsConfigurationWebviewProvider);
   commandsManager.registerCommands();
   
   // Update badge when tree data changes
@@ -454,7 +466,7 @@ function cleanRemoteName(remoteName?: string): string {
 
 function suggestBinding(params: ExtendedClient.SuggestBindingParams) {
   logToSonarLintOutput(`Received binding suggestions: ${JSON.stringify(params)}`);
-  AutoBindingService.instance.checkConditionsAndAttemptAutobinding(params);
+  void AutoBindingService.instance.checkConditionsAndAttemptAutobinding(params);
 }
 
 function initializeLanguageModelTools(context: VSCode.ExtensionContext) {
@@ -475,7 +487,7 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
       RemediationService.instance.trackFixSuggestionEvent(params);
     } else {
       // Labs disabled: Show immediately (old behavior)
-      FixSuggestionService.instance.showFixSuggestion(params);
+      void FixSuggestionService.instance.showFixSuggestion(params);
     }
   })
   languageClient.onNotification(ExtendedClient.ShowRuleDescriptionNotification.type, showRuleDescription(context));
@@ -512,18 +524,18 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
   languageClient.onNotification(ExtendedClient.ShowNotificationForFirstSecretsIssueNotification.type, () =>
     showNotificationForFirstSecretsIssue(context)
   );
-  languageClient.onNotification(ExtendedClient.ShowSonarLintOutputNotification.type, () =>
-    VSCode.commands.executeCommand(Commands.SHOW_SONARLINT_OUTPUT)
-  );
-  languageClient.onNotification(ExtendedClient.OpenJavaHomeSettingsNotification.type, () =>
-    VSCode.commands.executeCommand(Commands.OPEN_SETTINGS, JAVA_HOME_CONFIG)
-  );
-  languageClient.onNotification(ExtendedClient.BrowseToNotification.type, browseTo =>
-    VSCode.commands.executeCommand(Commands.OPEN_BROWSER, VSCode.Uri.parse(browseTo))
-  );
+  languageClient.onNotification(ExtendedClient.ShowSonarLintOutputNotification.type, () => {
+    void VSCode.commands.executeCommand(Commands.SHOW_SONARLINT_OUTPUT);
+  });
+  languageClient.onNotification(ExtendedClient.OpenJavaHomeSettingsNotification.type, () => {
+    void VSCode.commands.executeCommand(Commands.OPEN_SETTINGS, JAVA_HOME_CONFIG);
+  });
+  languageClient.onNotification(ExtendedClient.BrowseToNotification.type, browseTo => {
+    void VSCode.commands.executeCommand(Commands.OPEN_BROWSER, VSCode.Uri.parse(browseTo));
+  });
   languageClient.onNotification(ExtendedClient.OpenConnectionSettingsNotification.type, isSonarCloud => {
     const targetSection = `sonarlint-abl.connectedMode.connections.${isSonarCloud ? 'sonarcloud' : 'sonarqube'}`;
-    return VSCode.commands.executeCommand(Commands.OPEN_SETTINGS, targetSection);
+    void VSCode.commands.executeCommand(Commands.OPEN_SETTINGS, targetSection);
   });
   languageClient.onNotification(ExtendedClient.ShowHotspotNotification.type, async h => {
     await showSecurityHotspot(findingsView, findingsTreeDataProvider, h);
@@ -567,15 +579,16 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
   languageClient.onRequest(ExtendedClient.IsOpenInEditor.type, fileUri => {
     return VSCode.workspace.textDocuments.some(doc => code2ProtocolConverter(doc.uri) === fileUri);
   });
-  languageClient.onNotification(ExtendedClient.EmbeddedServerStartedNotification.type, (params) => {
-    onEmbeddedServerStarted(params.port);
+  languageClient.onNotification(ExtendedClient.EmbeddedServerStartedNotification.type, params => {
+    void onEmbeddedServerStarted(languageClient, params.port);
+    context.subscriptions.push(scheduleCopilotActivationMcpRefresh(languageClient));
   });
   languageClient.onRequest(ExtendedClient.HasJoinedIdeLabs.type, () => {
     return IdeLabsFlagManagementService.instance.isIdeLabsJoined();
   });
   languageClient.onNotification(ExtendedClient.DidChangePluginStatuses.type, params => {
     if (PluginStatusPanel.isOpen()) {
-      PluginStatusPanel.refresh(params.pluginStatuses, params.configScopeId);
+      void PluginStatusPanel.refresh(params.pluginStatuses, params.configScopeId);
     }
   });
 }

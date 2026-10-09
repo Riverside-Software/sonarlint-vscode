@@ -25,7 +25,7 @@ jobs:
       matrix:
         platform: [ 'win32-x64', 'linux-x64', 'darwin-x64', 'darwin-arm64', 'universal' ]
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Get vault secrets
         id: secrets
         uses: SonarSource/vault-action-wrapper@c154b4a417b51cb98dd71137f49bf20e77c56820 # 3.4.0
@@ -84,13 +84,12 @@ jobs:
       ARTIFACTORY_URL: https://repox.jfrog.io/artifactory
     steps:
       - name: Checkout custom actions
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           clean: false
-      - name: Use Node 20
-        uses: actions/setup-node@v4
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          node-version: '20'
+          version: 2026.8.9
       - name: Get vault secrets
         id: secrets
         uses: SonarSource/vault-action-wrapper@3.0.1
@@ -150,11 +149,10 @@ jobs:
       ARTIFACTORY_URL: https://repox.jfrog.io/artifactory
     steps:
       - name: Checkout custom actions
-        uses: actions/checkout@v4
-      - name: Use Node 20
-        uses: actions/setup-node@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          node-version: '20'
+          version: 2026.8.9
       - name: Get vault secrets
         id: secrets
         uses: SonarSource/vault-action-wrapper@3.0.1

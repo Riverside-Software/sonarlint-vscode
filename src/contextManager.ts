@@ -10,8 +10,12 @@ import * as vscode from 'vscode';
 import { BindingService } from './connected/binding';
 import { allFalse, allTrue } from './rules/rules';
 import { ConnectionSettingsService } from './settings/connectionsettings';
-import { HAS_CLICKED_GET_STARTED_LINK } from './commons'
-import { getCurrentAgentWithMCPSupport, getCurrentAgentWithHookSupport } from './aiAgentsConfiguration/aiAgentUtils';
+import { HAS_CLICKED_GET_STARTED_LINK } from './commons';
+import {
+  COPILOT_ACTIVATION_DELAY_MS,
+  getCurrentAgentWithHookSupport,
+  getCurrentAgentWithMCPSupport
+} from './aiAgentsConfiguration/aiAgentUtils';
 import { IdeLabsFlagManagementService } from './labs/ideLabsFlagManagementService';
 
 const SOME_CONNECTED_MODE_CONTEXT_KEY = 'sonarqube-abl.someFoldersUseConnectedMode';
@@ -20,10 +24,10 @@ const HAS_EXPLORED_ISSUE_LOCATIONS_CONTEXT_KEY = 'sonarqube-abl.hasExploredIssue
 const SHOULD_SHOW_GET_STARTED_VIEW = 'sonarqube-abl.shouldShowGetStartedView';
 const FLIGHT_RECORDER_RUNNING = 'sonarqube-abl.flightRecorderRunning';
 const MCP_SERVER_SUPPORTED_AGENT = 'sonarqube-abl.mcpServerSupportedAgent';
+const RULES_FILE_SUPPORTED_AGENT = 'sonarqube-abl.rulesFileSupportedAgent';
 const HOOK_SCRIPT_SUPPORTED_AGENT = 'sonarqube-abl.hookScriptSupportedAgent';
 const IDE_LABS_ENABLED_FLAG_KEY = 'sonarqube-abl.ideLabsEnabled';
 const IDE_LABS_JOINED_FLAG_KEY = 'sonarqube-abl.ideLabsJoined';
-const COPILOT_ACTIVATION_DELAY_MS = 10000;
 
 export class ContextManager {
   private static _instance: ContextManager;
@@ -55,19 +59,23 @@ export class ContextManager {
     this.initializeIdeLabsContext();
 
     setTimeout(() => {
-      this.setMCPServerSupportedAgentContext();
+      this.setRulesFileSupportedAgentContext();
       this.setHookScriptSupportedAgentContext();
     }, COPILOT_ACTIVATION_DELAY_MS);
   }
 
-  setMCPServerSupportedAgentContext() {
-    const isSupportedAgent = getCurrentAgentWithMCPSupport() !== undefined;
-    vscode.commands.executeCommand('setContext', MCP_SERVER_SUPPORTED_AGENT, isSupportedAgent);
+  setMCPServerSupportedAgentContext(isSupportedTarget: boolean) {
+    vscode.commands.executeCommand('setContext', MCP_SERVER_SUPPORTED_AGENT, isSupportedTarget);
+  }
+
+  setRulesFileSupportedAgentContext() {
+    const isSupportedTarget = getCurrentAgentWithMCPSupport() !== undefined;
+    vscode.commands.executeCommand('setContext', RULES_FILE_SUPPORTED_AGENT, isSupportedTarget);
   }
 
   setHookScriptSupportedAgentContext() {
-    const isSupportedAgent = getCurrentAgentWithHookSupport() !== undefined;
-    vscode.commands.executeCommand('setContext', HOOK_SCRIPT_SUPPORTED_AGENT, isSupportedAgent);
+    const isSupportedTarget = getCurrentAgentWithHookSupport() !== undefined;
+    vscode.commands.executeCommand('setContext', HOOK_SCRIPT_SUPPORTED_AGENT, isSupportedTarget);
   }
 
   setIssueLocationsContext() {
@@ -111,7 +119,7 @@ export class ContextManager {
     vscode.commands.executeCommand('setContext', SHOULD_SHOW_GET_STARTED_VIEW, undefined);
     vscode.commands.executeCommand('setContext', FLIGHT_RECORDER_RUNNING, undefined);
     vscode.commands.executeCommand('setContext', MCP_SERVER_SUPPORTED_AGENT, undefined);
+    vscode.commands.executeCommand('setContext', RULES_FILE_SUPPORTED_AGENT, undefined);
     vscode.commands.executeCommand('setContext', HOOK_SCRIPT_SUPPORTED_AGENT, undefined);
   }
-
 }
