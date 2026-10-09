@@ -1,10 +1,17 @@
+## 5.9
+* Update Go analyzer 1.41 -> [1.42](https://github.com/SonarSource/sonar-go/releases/tag/1.42.0.7579) -> [1.43](https://github.com/SonarSource/sonar-go/releases/tag/1.43.0.7704)
+* Update Java analyzer 8.39 -> [8.40](https://github.com/SonarSource/sonar-java/releases/tag/8.40.0.46617) -> [8.41](https://github.com/SonarSource/sonar-java/releases/tag/8.41.0.47177)
+* Update Python analyzer 5.29 -> [5.30](https://github.com/SonarSource/sonar-python/releases/tag/5.30.0.36259) -> [5.31](https://github.com/SonarSource/sonar-python/releases/tag/5.31.0.36502)
+* Update Text & Secrets analyzer 2.48 -> [2.49](https://github.com/SonarSource/sonar-text/releases/tag/2.49.0.12346)
+* Update JS/TS/CSS analyzer 13.7 -> [13.8](https://github.com/SonarSource/SonarJS/releases/tag/13.8.0.44569)
+
 ## 5.8
 * Update Text & Secrets analyzer 2.47 -> [2.48](https://github.com/SonarSource/sonar-text/releases/tag/2.48.0.12108)
 * Update Java analyzer 8.36 -> [8.37](https://github.com/SonarSource/sonar-java/releases/tag/8.37.0.45887) -> [8.38](https://github.com/SonarSource/sonar-java/releases/tag/8.38.0.46176) -> [8.39](https://github.com/SonarSource/sonar-java/releases/tag/8.39.0.46279)
 * Update Python analyzer 5.26 -> [5.27](https://github.com/SonarSource/sonar-python/releases/tag/5.27.0.35548) -> [5.28](https://github.com/SonarSource/sonar-python/releases/tag/5.28.0.35681) -> [5.29](https://github.com/SonarSource/sonar-python/releases/tag/5.29.0.35837)
 * Update PHP analyzer 3.59 -> [3.60](https://github.com/SonarSource/sonar-php/releases/tag/3.60.0.16641)
-* Update JS/TS/CSS analyzer 13.4 -> [13.5](https://github.com/SonarSource/SonarJS/releases/tag/13.5.0.44127) -> [13.6](https://github.com/SonarSource/SonarJS/releases/tag/13.6.0.44263)
-* Update IaC analyzer 2.13 -> [2.14](https://github.com/SonarSource/sonar-iac/releases/tag/2.14.0.22356)
+* Update JS/TS/CSS analyzer 13.4 -> [13.5](https://github.com/SonarSource/SonarJS/releases/tag/13.5.0.44127) -> [13.6](https://github.com/SonarSource/SonarJS/releases/tag/13.6.0.44263) -> [13.7](https://github.com/SonarSource/SonarJS/releases/tag/13.7.0.44407)
+* Update IaC analyzer 2.13 -> [2.14](https://github.com/SonarSource/sonar-iac/releases/tag/2.14.0.22356) -> [2.15](https://github.com/SonarSource/sonar-iac/releases/tag/2.15.0.22475)
 * Update Go analyzer 1.40 -> [1.41](https://github.com/SonarSource/sonar-go/releases/tag/1.41.0.7435)
 
 ## 5.7
