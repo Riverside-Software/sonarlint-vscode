@@ -33,7 +33,7 @@ import {
 import { FindingsTreeDataProvider, FindingsTreeViewItem } from './findings/findingsTreeDataProvider';
 import { FilterType, getFilterDisplayName } from './findings/findingsTreeDataProviderUtil';
 import { getJavaConfig, installClasspathListener } from './java/java';
-import { getOpenEdgeConfig } from './openedge/openedge';
+import { getOpenEdgeConfig, waitForOpenEdgeCompilation } from './openedge/openedge';
 import { LocationTreeItem, SecondaryLocationsTree } from './location/locations';
 import { SonarLintExtendedLanguageClient } from './lsp/client';
 import { languageServerCommand } from './lsp/server';
@@ -489,6 +489,7 @@ function installCustomRequestHandlers(context: VSCode.ExtensionContext) {
 
   languageClient.onRequest(ExtendedClient.GetJavaConfigRequest.type, fileUri => getJavaConfig(languageClient, fileUri));
   languageClient.onRequest(ExtendedClient.GetOpenEdgeConfigRequest.type, fileUri => getOpenEdgeConfig(languageClient, fileUri));
+  languageClient.onRequest(ExtendedClient.WaitForOpenEdgeCompilationRequest.type, fileUri => waitForOpenEdgeCompilation(fileUri));
   languageClient.onRequest(ExtendedClient.ScmCheckRequest.type, fileUri => isIgnoredByScm(fileUri));
   languageClient.onRequest(ExtendedClient.ShouldAnalyseFileCheck.type, params => shouldAnalyseFile(params.uri));
   languageClient.onRequest(ExtendedClient.FilterOutExcludedFiles.type, params =>

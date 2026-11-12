@@ -161,6 +161,10 @@ export namespace ExtendedClient {
     export const type = new lsp.RequestType<string, GetOpenEdgeConfigResponse, void>('sonarlint/getOpenEdgeConfig');
   }
 
+  export namespace WaitForOpenEdgeCompilationRequest {
+    export const type = new lsp.RequestType<string, boolean, void>('sonarlint/waitForOpenEdgeCompilation');
+  }
+
   export namespace ScmCheckRequest {
     export const type = new lsp.RequestType<string, boolean, void>('sonarlint/isIgnoredByScm');
   }
