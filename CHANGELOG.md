@@ -1,3 +1,17 @@
+## 6.1.1
+
+* Fix an issue that prevented SonarQube for IDE from starting due to a corrupted H2 database. If the issue persists, close VS Code, delete `.sonarlint/storage/h2/sq-ide.mv.db` in your user home directory, and restart VS Code.
+
+## 6.1
+
+* Reuse saved Connected Mode tokens to authenticate SonarQube CLI
+* Support uninstallation of SonarQube CLI from the AI Integrations panel
+* Remove legacy AI instruction and analysis-hook management
+* Update Text & Secrets analyzer 2.51 -> [2.52](https://github.com/SonarSource/sonar-text/releases/tag/2.52.0.13617)
+* Update IaC analyzer 2.20 -> [2.21](https://github.com/SonarSource/sonar-iac/releases/tag/2.21.0.24162)
+* Update Go analyzer 1.46 -> [1.47](https://github.com/SonarSource/sonar-go/releases/tag/1.47.0.9174)
+* Update JS/TS/CSS analyzer 14.0 -> [14.1](https://github.com/SonarSource/SonarJS/releases/tag/14.1.0.46226)
+
 ## 6.0.1
 
 * Fixed an issue where opening VS Code could overwrite custom SonarQube MCP server settings.

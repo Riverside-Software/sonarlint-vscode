@@ -45,6 +45,7 @@ main {
 .product-header {
   display: flex;
   align-items: center;
+  min-height: 16px;
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
@@ -54,6 +55,12 @@ main {
 .product-name {
   font-size: 12px;
   font-weight: 600;
+}
+
+.product-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .product-card h2 {
@@ -115,7 +122,7 @@ main {
   list-style: none;
 }
 
-.agent-list li {
+.agent-list > li {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -124,12 +131,54 @@ main {
   padding: 4px 0;
 }
 
-.agent-details {
+.agent-details,
+.mcp-integration-details {
   min-width: 0;
 }
 
 .agent-action {
   flex: 0 0 auto;
+}
+
+.agent-list .cli-integration-row,
+.mcp-integration-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 6px 0;
+}
+
+.cli-recording-status,
+.mcp-configuration-status {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+.configuration-paths {
+  position: relative;
+}
+
+.configuration-path-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1;
+  width: max-content;
+  max-width: min(360px, calc(100vw - 64px));
+  padding: 6px 8px;
+  color: var(--vscode-editorHoverWidget-foreground);
+  background: var(--vscode-editorHoverWidget-background);
+  border: 1px solid var(--vscode-editorHoverWidget-border);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  visibility: hidden;
+}
+
+.configuration-paths:hover .configuration-path-tooltip,
+.configuration-paths:focus-within .configuration-path-tooltip {
+  visibility: visible;
 }
 
 .agent-availability {
@@ -154,21 +203,13 @@ main {
 
 #cli-feedback {
   margin-bottom: 0;
+  white-space: pre-line;
 }
 
 @media (max-width: 360px) {
-  .agent-list li {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .agent-action {
-    width: 100%;
-  }
-
-  .agent-availability {
-    text-align: left;
+  .agent-list .cli-integration-row,
+  .mcp-integration-row {
+    column-gap: 8px;
   }
 }
 
@@ -195,7 +236,8 @@ button {
 }
 
 .primary-action:disabled,
-.secondary-action:disabled {
+.secondary-action:disabled,
+.icon-action:disabled {
   cursor: default;
   opacity: 0.5;
 }
@@ -208,6 +250,26 @@ button {
 
 .secondary-action:hover:not(:disabled) {
   background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.icon-action {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  color: var(--vscode-foreground);
+  background: transparent;
+  border: 0;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.icon-action:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.icon-action .codicon {
+  display: block;
 }
 
 .link-action,
@@ -242,53 +304,13 @@ button {
   list-style: none;
 }
 
-.mcp-integration-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 4px 12px;
-  padding: 4px 0;
-}
-
-.mcp-integration-details,
-.mcp-integration-action {
-  display: grid;
-  min-width: 0;
-  gap: 3px;
-}
-
-.mcp-integration-action {
-  justify-items: end;
-}
-
-.mcp-configuration-path,
 .mcp-diagnostic {
   overflow-wrap: anywhere;
-}
-
-.mcp-diagnostic {
   grid-column: 1 / -1;
 }
 
-.component-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 12px;
-  margin-top: 12px;
-  border-top: 1px solid var(--vscode-panel-border);
-}
-
-.component-row[hidden] {
-  display: none;
-}
-
-.component-details {
-  display: grid;
-  gap: 2px;
-}
-
-button:focus-visible {
+button:focus-visible,
+.configuration-paths .status:focus-visible {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: 2px;
 }
@@ -301,22 +323,10 @@ button:focus-visible {
   .product-card {
     padding: 13px;
   }
-
-  .mcp-integration-row {
-    grid-template-columns: 1fr;
-  }
-
-  .mcp-integration-action {
-    justify-items: stretch;
-  }
 }
 
 @media (max-width: 300px) {
   .mcp-integration-row {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .mcp-integration-action {
-    justify-items: start;
   }
 }

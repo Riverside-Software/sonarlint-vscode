@@ -9,13 +9,17 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
 import * as vscode from 'vscode';
+import { ErrorCodes, ResponseError } from 'vscode-languageclient/node';
 import {
   canIntegrateAgent,
+  cliPathCleanupHint,
   CliSetupSession,
   resolveCliPrimaryAction,
   selectConnection
 } from '../../../src/aiAgentsConfiguration/cliSetup';
 import { AiIntegration } from '../../../src/lsp/aiIntegrationProtocol';
+import { SonarLintExtendedLanguageClient } from '../../../src/lsp/client';
+import * as logging from '../../../src/util/logging';
 import { SETUP_TEARDOWN_HOOK_TIMEOUT } from '../commons';
 
 const INSTALLED = AiIntegration.CliInstallationStatus.INSTALLED;
@@ -269,4 +273,708 @@ suite('cliSetup', () => {
     expect(session.notice?.outcome).to.equal('failed');
     expect(onChange.callCount).to.equal(4);
   });
+
+  for (const step of ['install', 'integrate'] as const) {
+    test(`disposal during ${step} command preparation prevents opening a terminal`, async () => {
+      const command = deferred<AiIntegration.PrepareCliCommandResponse>();
+      const preparing = deferred<void>();
+      const prepareCommand = sinon.stub().callsFake(() => {
+        preparing.resolve();
+        return command.promise;
+      });
+      const createTerminal = sinon.stub(vscode.window, 'createTerminal');
+      const onChange = sinon.stub().resolves();
+      const onFinished = sinon.stub().resolves();
+      const session = new CliSetupSession(
+        { subscriptions: [] } as unknown as vscode.ExtensionContext,
+        {
+          getAiIntegrationState: sinon.stub().resolves({
+            cli: {
+              installationStatus: step === 'install' ? NOT_INSTALLED : INSTALLED,
+              authenticationStatus: AUTHENTICATED
+            },
+            agents: [
+              {
+                agent: AiIntegration.AiAgent.CODEX,
+                detectionSources: [AiIntegration.AiAgentDetectionSource.CLI],
+                cliIntegrationSupported: true,
+                standaloneMcpSupported: false
+              }
+            ],
+            connectionChoices: []
+          }),
+          prepareInstallCliCommand: prepareCommand,
+          prepareIntegrateCliCommand: prepareCommand
+        } as never,
+        onChange,
+        onFinished
+      );
+
+      const attempt = session.run(step, AiIntegration.AiAgent.CODEX);
+      await preparing.promise;
+      session.dispose();
+      command.resolve({ executable: 'sonar', arguments: [step], interactive: true });
+      await attempt;
+
+      expect(createTerminal.notCalled).to.be.true;
+      expect(onFinished.notCalled).to.be.true;
+      expect(onChange.calledOnce).to.be.true;
+      expect(session.operationInProgress).to.be.false;
+    });
+  }
+
+  suite('CLI uninstall', () => {
+    const status = AiIntegration.UninstallCliStatus;
+    const actionStatus = AiIntegration.AiIntegrationActionStatus;
+    let session: CliSetupSession;
+    let getState: sinon.SinonStub;
+    let uninstall: sinon.SinonStub;
+    let confirm: sinon.SinonStub;
+    let progress: sinon.SinonStub;
+    let onChange: sinon.SinonStub;
+    let onAccepted: sinon.SinonStub;
+    let onFinished: sinon.SinonStub;
+    let log: sinon.SinonStub;
+    let cancellation: vscode.CancellationTokenSource;
+
+    setup(() => {
+      sinon.stub(vscode.env, 'remoteName').value(undefined);
+      getState = sinon.stub().resolves({
+        cli: { installationStatus: INSTALLED, authenticationStatus: AUTHENTICATED, uninstallAvailable: true },
+        agents: [],
+        connectionChoices: []
+      });
+      uninstall = sinon.stub().resolves({ status: status.UNINSTALLED, stdout: '', stderr: '' });
+      confirm = sinon.stub(vscode.window, 'showWarningMessage').resolves('Uninstall' as never);
+      cancellation = new vscode.CancellationTokenSource();
+      progress = sinon.stub(vscode.window, 'withProgress')
+        .callsFake((_options, task) => task({ report: sinon.stub() }, cancellation.token));
+      onChange = sinon.stub().resolves();
+      onAccepted = sinon.stub().resolves();
+      onFinished = sinon.stub().resolves();
+      log = sinon.stub(logging, 'logToSonarLintOutput');
+      session = new CliSetupSession(
+        { subscriptions: [] } as unknown as vscode.ExtensionContext,
+        { getAiIntegrationState: getState, uninstallCli: uninstall } as never,
+        onChange
+      );
+    });
+
+    teardown(() => {
+      session.dispose();
+      cancellation.dispose();
+    });
+
+    function attemptUninstall(): Promise<void> {
+      return session.uninstall(onAccepted, onFinished);
+    }
+
+    function expectOutcome(expected: AiIntegration.AiIntegrationActionStatus): void {
+      expect(onAccepted.calledOnce).to.be.true;
+      expect(onFinished.calledOnceWithExactly({ status: expected })).to.be.true;
+    }
+
+    test('confirmation cancellation makes no changes and does not take the setup lock', async () => {
+      const selection = deferred<string | undefined>();
+      const prompted = deferred<void>();
+      confirm.callsFake(() => { prompted.resolve(); return selection.promise; });
+      const attempt = attemptUninstall();
+      await prompted.promise;
+      expect(session.operationInProgress).to.be.false;
+      expect(confirm.calledOnce).to.be.true;
+      expect(getState.notCalled).to.be.true;
+      await session.uninstall();
+      expect(confirm.calledOnce).to.be.true;
+      selection.resolve(undefined);
+      await attempt;
+
+      expectOutcome(actionStatus.CANCELLED);
+      expect(uninstall.notCalled).to.be.true;
+      expect(progress.notCalled).to.be.true;
+      expect(session.operationInProgress).to.be.false;
+      expect(session.notice).to.be.undefined;
+      expect(onChange.getCalls().map(call => call.args)).to.deep.equal([[], [true]]);
+      expect(confirm.firstCall.args[1]).to.include({ modal: true });
+      expect(confirm.firstCall.args[1].detail).to.include('terminals, IDEs, and agents')
+        .and.include('credentials and registered integrations').and.include('may revoke recorded server tokens');
+    });
+
+    test('does not clear an install lock when uninstall is declined or confirms too late', async () => {
+      const selection = deferred<string | undefined>();
+      const prompted = deferred<void>();
+      confirm.callsFake(() => { prompted.resolve(); return selection.promise; });
+      sinon.stub(vscode.window, 'createTerminal').returns({ show: sinon.stub() } as never);
+      sinon.stub(vscode.window, 'onDidCloseTerminal').returns({ dispose: sinon.stub() });
+      const languageClient = (session as unknown as {
+        languageClient: { prepareInstallCliCommand: sinon.SinonStub };
+      }).languageClient;
+      languageClient.prepareInstallCliCommand = sinon.stub().resolves({
+        executable: 'sonar', arguments: ['install'], interactive: true
+      });
+      getState.resolves({
+        cli: { installationStatus: NOT_INSTALLED, authenticationStatus: UNKNOWN },
+        agents: [],
+        connectionChoices: []
+      });
+
+      const attempt = session.uninstall();
+      await prompted.promise;
+      expect(session.operationInProgress).to.be.false;
+      await session.run('install');
+      expect(session.operationInProgress).to.be.true;
+      expect(session.operationMessage).to.equal('SonarQube CLI setup is in progress.');
+      const installNotice = { outcome: 'failed' as const, message: 'Install is still running' };
+      session.notice = installNotice;
+
+      selection.resolve('Uninstall');
+      await attempt;
+
+      expect(uninstall.notCalled).to.be.true;
+      expect(progress.notCalled).to.be.true;
+      expect(session.operationInProgress).to.be.true;
+      expect(session.operationMessage).to.equal('SonarQube CLI setup is in progress.');
+      expect(session.notice).to.equal(installNotice);
+      expect(onChange.getCalls().map(call => call.args)).to.deep.equal([[], [], []]);
+    });
+
+    test('uses noncancellable progress and blocks setup until the request finishes', async () => {
+      const response = deferred<AiIntegration.UninstallCliResponse>();
+      const started = deferred<void>();
+      uninstall.callsFake(() => { started.resolve(); return response.promise; });
+      const attempt = attemptUninstall();
+      await started.promise;
+      await session.run('authenticate');
+      await attemptUninstall();
+
+      expect(getState.notCalled).to.be.true;
+      expect(uninstall.calledOnce).to.be.true;
+      expect(session.operationInProgress).to.be.true;
+      expect(session.operationMessage).to.equal('Uninstalling SonarQube CLI…');
+      expect(progress.firstCall.args[0]).to.deep.equal({
+        location: vscode.ProgressLocation.Notification, title: 'Uninstalling SonarQube CLI', cancellable: false
+      });
+      response.resolve({ status: status.UNINSTALLED, stdout: 'Reset completed', stderr: 'Cleanup warning', message: 'Remove PATH' });
+      await attempt;
+
+      expectOutcome(actionStatus.SUCCEEDED);
+      expect(log.getCalls().map(call => call.args[0])).to.deep.equal(['Reset completed', 'Cleanup warning', 'Remove PATH']);
+      expect(session.notice).to.include({ outcome: 'completed', showOutput: true });
+      expect(session.notice.message).to.include('PATH entry manually').and.include('Some configuration may remain')
+        .and.include(cliPathCleanupHint());
+      expect(session.operationInProgress).to.be.false;
+      expect(onChange.lastCall.args).to.deep.equal([true]);
+    });
+
+    test('names the Windows user Path and the Unix profiles the installer writes', () => {
+      expect(cliPathCleanupHint('win32')).to.include('%LOCALAPPDATA%\\sonarqube-cli\\bin')
+        .and.include('user Path in Environment Variables').and.not.include('~/.profile');
+      expect(cliPathCleanupHint('linux')).to.include('$HOME/.local/share/sonarqube-cli/bin')
+        .and.include('~/.bashrc').and.include('~/.bash_profile')
+        .and.include('~/.zshrc').and.include('~/.zprofile').and.include('~/.profile')
+        .and.not.include('%LOCALAPPDATA%');
+    });
+
+    for (const [backendStatus, telemetryStatus] of [
+      [status.UNINSTALLED, actionStatus.SUCCEEDED],
+      [status.NOT_AVAILABLE, actionStatus.FAILED],
+      [status.FAILED, actionStatus.FAILED],
+      [99 as AiIntegration.UninstallCliStatus, actionStatus.UNKNOWN],
+      [undefined, actionStatus.UNKNOWN]
+    ] as const) {
+      test(`maps backend status ${String(backendStatus)} to ${telemetryStatus}`, async () => {
+        uninstall.resolves(backendStatus === undefined
+          ? undefined
+          : { status: backendStatus, stdout: 'Partial reset', stderr: 'Reset error', message: 'Backend diagnostic' });
+
+        await attemptUninstall();
+
+        expectOutcome(telemetryStatus);
+        if (backendStatus === undefined) {
+          expect(session.notice).to.be.undefined;
+          return;
+        }
+        expect(log.getCalls().map(call => call.args[0])).to.deep.equal(['Partial reset', 'Reset error', 'Backend diagnostic']);
+        if (backendStatus === status.UNINSTALLED) {
+          expect(session.notice).to.include({ outcome: 'completed', showOutput: true });
+        } else {
+          expect(session.notice).to.deep.equal({ outcome: 'failed', message: 'Backend diagnostic', showOutput: true });
+        }
+      });
+    }
+
+    test('keeps unavailable and failed fallback copy distinct', async () => {
+      uninstall.resolves({ status: status.NOT_AVAILABLE, stdout: '', stderr: '' });
+      await attemptUninstall();
+      expect(session.notice.message).to.equal('Only an official per-user CLI installation can be uninstalled.');
+
+      onAccepted.resetHistory();
+      onFinished.resetHistory();
+      uninstall.resolves({ status: status.FAILED, stdout: '', stderr: '' });
+      await attemptUninstall();
+      expectOutcome(actionStatus.FAILED);
+      expect(session.notice.message).to.equal('Could not uninstall SonarQube CLI. Review the output for details.');
+    });
+
+    test('reports transport failures and refreshes the state', async () => {
+      uninstall.rejects(new Error('connection lost'));
+      await attemptUninstall();
+
+      expectOutcome(actionStatus.FAILED);
+      expect(session.notice).to.include({ outcome: 'failed', showOutput: true });
+      expect(log.calledOnceWithExactly('Could not uninstall SonarQube CLI: connection lost')).to.be.true;
+      expect(onChange.lastCall.args).to.deep.equal([true]);
+      expect(session.operationInProgress).to.be.false;
+    });
+
+    test('rejects remote and unsupported installations before prompting', async () => {
+      sinon.stub(vscode.env, 'remoteName').value('ssh-remote');
+      await attemptUninstall();
+      expect(onChange.notCalled).to.be.true;
+      expect(getState.notCalled).to.be.true;
+      expect(onAccepted.notCalled).to.be.true;
+      expect(onFinished.notCalled).to.be.true;
+      sinon.stub(vscode.env, 'remoteName').value(undefined);
+      onChange.resolves(false);
+      await attemptUninstall();
+
+      expectOutcome(actionStatus.FAILED);
+      expect(confirm.notCalled).to.be.true;
+      expect(uninstall.notCalled).to.be.true;
+      expect(session.operationInProgress).to.be.false;
+      expect(session.notice).to.deep.equal({
+        outcome: 'failed',
+        message: 'Only an official per-user CLI installation can be uninstalled.'
+      });
+    });
+
+    test('does not uninstall or update the view after disposal during confirmation', async () => {
+      const selection = deferred<string>();
+      const prompted = deferred<void>();
+      confirm.callsFake(() => { prompted.resolve(); return selection.promise; });
+      const attempt = attemptUninstall();
+      await prompted.promise;
+      session.dispose();
+      selection.resolve('Uninstall');
+      await attempt;
+
+      expect(uninstall.notCalled).to.be.true;
+      expect(progress.notCalled).to.be.true;
+      expect(onChange.calledOnce).to.be.true;
+      expect(onAccepted.calledOnce).to.be.true;
+      expect(onFinished.calledOnceWithExactly({ status: actionStatus.CANCELLED })).to.be.true;
+    });
+
+    test('reports cancellation when disposed before the progress task starts', async () => {
+      progress.callsFake((_options, task) => {
+        session.dispose();
+        return task({ report: sinon.stub() }, cancellation.token);
+      });
+
+      await attemptUninstall();
+
+      expect(uninstall.notCalled).to.be.true;
+      expect(onFinished.calledOnceWithExactly({ status: actionStatus.CANCELLED })).to.be.true;
+      expect(session.operationInProgress).to.be.false;
+    });
+
+    test('retains a completed reset response after disposal without updating the view', async () => {
+      const response = deferred<AiIntegration.UninstallCliResponse>();
+      const started = deferred<void>();
+      uninstall.callsFake(() => { started.resolve(); return response.promise; });
+      const attempt = attemptUninstall();
+      await started.promise;
+      session.dispose();
+      response.resolve({ status: status.UNINSTALLED, stdout: 'Reset output', stderr: 'Cleanup warning' });
+      await attempt;
+
+      expect(log.getCalls().map(call => call.args[0])).to.deep.equal(['Reset output', 'Cleanup warning']);
+      expect(onChange.getCalls().map(call => call.args)).to.deep.equal([[], []]);
+      expect(session.notice).to.be.undefined;
+      expect(onAccepted.calledOnce).to.be.true;
+      expect(onFinished.calledOnceWithExactly({ status: actionStatus.SUCCEEDED })).to.be.true;
+    });
+
+    test('rejects an already disposed session without reporting an attempt', async () => {
+      session.dispose();
+
+      await attemptUninstall();
+
+      expect(onAccepted.notCalled).to.be.true;
+      expect(onFinished.notCalled).to.be.true;
+      expect(getState.notCalled).to.be.true;
+      expect(onChange.notCalled).to.be.true;
+    });
+
+    test('reports a confirmation error as failed and releases the setup lock', async () => {
+      confirm.rejects(new Error('request failed'));
+
+      await attemptUninstall();
+
+      expectOutcome(actionStatus.FAILED);
+      expect(uninstall.notCalled).to.be.true;
+      expect(session.operationInProgress).to.be.false;
+    });
+
+    test('reports a rejected confirmation after disposal as cancellation before the uninstall RPC', async () => {
+      const pending = deferred<never>();
+      const started = deferred<void>();
+      confirm.callsFake(() => {
+        started.resolve();
+        return pending.promise;
+      });
+      const attempt = attemptUninstall();
+      await started.promise;
+      session.dispose();
+      pending.reject(new Error('view disposed'));
+      await attempt;
+
+      expect(onAccepted.calledOnce).to.be.true;
+      expect(onFinished.calledOnceWithExactly({ status: actionStatus.CANCELLED })).to.be.true;
+      expect(uninstall.notCalled).to.be.true;
+      expect(progress.notCalled).to.be.true;
+      expect(onChange.calledOnce).to.be.true;
+      expect(session.notice).to.be.undefined;
+      expect(session.operationInProgress).to.be.false;
+    });
+
+    test('preserves a rejected running uninstall RPC as failed after disposal', async () => {
+      const pending = deferred<AiIntegration.UninstallCliResponse>();
+      const started = deferred<void>();
+      uninstall.callsFake(() => {
+        started.resolve();
+        return pending.promise;
+      });
+      const attempt = attemptUninstall();
+      await started.promise;
+      session.dispose();
+      pending.reject(new Error('uninstall request failed'));
+      await attempt;
+
+      expect(onAccepted.calledOnce).to.be.true;
+      expect(onFinished.calledOnceWithExactly({ status: actionStatus.FAILED })).to.be.true;
+      expect(uninstall.calledOnce).to.be.true;
+      expect(progress.calledOnce).to.be.true;
+      expect(onChange.getCalls().map(call => call.args)).to.deep.equal([[], []]);
+      expect(session.notice).to.be.undefined;
+      expect(session.operationInProgress).to.be.false;
+      expect(log.calledOnceWithExactly('Could not uninstall SonarQube CLI: uninstall request failed')).to.be.true;
+    });
+
+    test('reports success once before a failed refresh and releases the setup lock', async () => {
+      const failure = new Error('refresh failed');
+      onChange.onCall(2).rejects(failure);
+
+      try {
+        await attemptUninstall();
+        expect.fail('refresh should fail');
+      } catch (error) {
+        expect(error).to.equal(failure);
+      }
+
+      expectOutcome(actionStatus.SUCCEEDED);
+      expect(session.operationInProgress).to.be.false;
+    });
+  });
+
+  suite('saved connection authentication', () => {
+    const status = AiIntegration.AuthenticateCliWithConnectionStatus;
+    let session: CliSetupSession;
+    let client: {
+      getAiIntegrationState: sinon.SinonStub;
+      authenticateCliWithConnection: sinon.SinonStub;
+      prepareAuthenticateCliCommand: sinon.SinonStub;
+    };
+    let onChange: sinon.SinonStub;
+    let onFinished: sinon.SinonStub;
+    let createTerminal: sinon.SinonStub;
+    let progressCancellation: vscode.CancellationTokenSource;
+    let requestStarted: ReturnType<typeof deferred<void>>;
+    let sendRequest: sinon.SinonStub;
+
+    setup(() => {
+      progressCancellation = new vscode.CancellationTokenSource();
+      sinon
+        .stub(vscode.window, 'withProgress')
+        .callsFake((_options, task) => task({ report: sinon.stub() }, progressCancellation.token));
+      createTerminal = sinon.stub(vscode.window, 'createTerminal').returns({ show: sinon.stub() } as never);
+      sinon.stub(vscode.window, 'onDidCloseTerminal').returns({ dispose: sinon.stub() });
+      requestStarted = deferred<void>();
+      sendRequest = sinon.stub().callsFake(() => {
+        requestStarted.resolve();
+        return Promise.resolve({ status: status.AUTHENTICATED });
+      });
+      client = {
+        getAiIntegrationState: sinon.stub().resolves({
+          cli: { installationStatus: INSTALLED, authenticationStatus: UNAUTHENTICATED },
+          agents: [],
+          connectionChoices: [{ connectionId: 'cloud', serverUrl: 'https://sonarcloud.io', organization: 'example' }]
+        }),
+        authenticateCliWithConnection: sinon
+          .stub()
+          .callsFake((params, token) =>
+            SonarLintExtendedLanguageClient.prototype.authenticateCliWithConnection.call({ sendRequest }, params, token)
+          ),
+        prepareAuthenticateCliCommand: sinon.stub().resolves({
+          executable: 'sonar',
+          arguments: ['auth', 'login'],
+          interactive: true
+        })
+      };
+      onChange = sinon.stub().resolves();
+      onFinished = sinon.stub().resolves();
+      session = new CliSetupSession(
+        { subscriptions: [] } as unknown as vscode.ExtensionContext,
+        client as never,
+        onChange,
+        onFinished
+      );
+    });
+
+    teardown(() => {
+      session.dispose();
+      progressCancellation.dispose();
+    });
+
+    test('forwards only the connection ID and cancellation token through the client', async () => {
+      const params = { connectionId: 'cloud' };
+      await SonarLintExtendedLanguageClient.prototype.authenticateCliWithConnection.call(
+        { sendRequest },
+        params,
+        progressCancellation.token
+      );
+      expect(
+        sendRequest.calledOnceWithExactly(
+          AiIntegration.AuthenticateCliWithConnection.type,
+          params,
+          progressCancellation.token
+        )
+      ).to.be.true;
+      expect([
+        status.AUTHENTICATED,
+        status.INTERACTIVE_LOGIN_REQUIRED,
+        status.UPGRADE_REQUIRED,
+        status.FAILED
+      ]).to.deep.equal([0, 1, 2, 3]);
+    });
+
+    test('completes saved-token authentication and refreshes exactly once without a terminal', async () => {
+      await session.run('authenticate');
+      expect(client.authenticateCliWithConnection.calledOnce).to.be.true;
+      expect(client.authenticateCliWithConnection.firstCall.args[0]).to.deep.equal({ connectionId: 'cloud' });
+      expect(client.prepareAuthenticateCliCommand.notCalled).to.be.true;
+      expect(createTerminal.notCalled).to.be.true;
+      expect(onFinished.calledOnce).to.be.true;
+      expect(onFinished.firstCall.args).to.deep.equal(['authenticate', undefined, { status: 'SUCCEEDED' }]);
+      expect(onChange.getCalls().map(call => call.args)).to.deep.equal([[], [true]]);
+      expect(session.notice?.outcome).to.equal('completed');
+      expect(session.operationInProgress).to.be.false;
+    });
+
+    test('uses interactive login only when the saved credentials require it', async () => {
+      client.authenticateCliWithConnection.resolves({ status: status.INTERACTIVE_LOGIN_REQUIRED });
+      await session.run('authenticate');
+      expect(
+        client.prepareAuthenticateCliCommand.calledOnceWithExactly({
+          serverUrl: 'https://sonarcloud.io',
+          organization: 'example'
+        })
+      ).to.be.true;
+      expect(createTerminal.calledOnce).to.be.true;
+      expect(onFinished.notCalled).to.be.true;
+      await session.handleTerminalClosed({ code: 0, reason: vscode.TerminalExitReason.Process });
+      expect(onFinished.calledOnce).to.be.true;
+    });
+
+    test('uses interactive login when an older server does not support saved-token authentication', async () => {
+      sendRequest.rejects(new ResponseError(ErrorCodes.MethodNotFound, 'Unknown method'));
+      await session.run('authenticate');
+      expect(
+        client.prepareAuthenticateCliCommand.calledOnceWithExactly({
+          serverUrl: 'https://sonarcloud.io',
+          organization: 'example'
+        })
+      ).to.be.true;
+      expect(createTerminal.calledOnce).to.be.true;
+      expect(onFinished.notCalled).to.be.true;
+    });
+
+    test('does not start interactive login for other RPC errors', async () => {
+      sendRequest.rejects(new ResponseError(ErrorCodes.InternalError, 'Request failed'));
+      await session.run('authenticate');
+      expect(client.prepareAuthenticateCliCommand.notCalled).to.be.true;
+      expect(createTerminal.notCalled).to.be.true;
+      expect(onFinished.firstCall.args[2]).to.deep.equal({ status: 'FAILED' });
+      expect(session.operationInProgress).to.be.false;
+    });
+
+    test('keeps interactive login when there is no saved connection', async () => {
+      client.getAiIntegrationState.resolves({
+        cli: { installationStatus: INSTALLED, authenticationStatus: UNAUTHENTICATED },
+        agents: [],
+        connectionChoices: []
+      });
+      await session.run('authenticate');
+      expect(client.authenticateCliWithConnection.notCalled).to.be.true;
+      expect(client.prepareAuthenticateCliCommand.calledOnceWithExactly({})).to.be.true;
+      expect(createTerminal.calledOnce).to.be.true;
+    });
+
+    for (const response of [
+      { status: status.UPGRADE_REQUIRED, message: 'Update SonarQube CLI to the latest version.' },
+      { status: status.UPGRADE_REQUIRED },
+      { status: status.FAILED, message: 'The saved token was rejected.' },
+      { status: status.FAILED }
+    ]) {
+      test(`shows ${status[response.status]} without interactive login (${response.message ?? 'no message'})`, async () => {
+        client.authenticateCliWithConnection.resolves(response);
+        await session.run('authenticate');
+        expect(session.notice).to.deep.equal({
+          outcome: 'failed',
+          message:
+            response.message ??
+            (response.status === status.UPGRADE_REQUIRED
+              ? 'Update SonarQube CLI to the latest version to reuse a saved connection token.'
+              : 'Could not authenticate SonarQube CLI. Try again.')
+        });
+        expect(client.prepareAuthenticateCliCommand.notCalled).to.be.true;
+        expect(createTerminal.notCalled).to.be.true;
+        expect(onFinished.firstCall.args[2]).to.deep.equal({ status: 'FAILED' });
+        expect(session.operationInProgress).to.be.false;
+      });
+    }
+
+    test('releases the operation after a failed request and allows a retry', async () => {
+      client.authenticateCliWithConnection.rejects(new Error('Transport failure'));
+      await session.run('authenticate');
+      expect(session.notice?.outcome).to.equal('failed');
+      expect(session.operationInProgress).to.be.false;
+      client.authenticateCliWithConnection.resolves({ status: status.AUTHENTICATED });
+      await session.run('authenticate');
+      expect(onFinished.callCount).to.equal(2);
+      expect(createTerminal.notCalled).to.be.true;
+    });
+
+    for (const result of [status.AUTHENTICATED, status.INTERACTIVE_LOGIN_REQUIRED]) {
+      test(`cancels the RPC and ignores a late ${status[result]} result`, async () => {
+        const response = deferred<AiIntegration.AuthenticateCliWithConnectionResponse>();
+        client.authenticateCliWithConnection.callsFake(() => {
+          requestStarted.resolve();
+          return response.promise;
+        });
+        const attempt = session.run('authenticate');
+        await requestStarted.promise;
+        progressCancellation.cancel();
+        expect(client.authenticateCliWithConnection.firstCall.args[1].isCancellationRequested).to.be.true;
+        response.resolve({ status: result });
+        await attempt;
+        expect(onFinished.firstCall.args[2]).to.deep.equal({ status: 'CANCELLED' });
+        expect(session.notice?.outcome).to.equal('cancelled');
+        expect(client.prepareAuthenticateCliCommand.notCalled).to.be.true;
+        expect(createTerminal.notCalled).to.be.true;
+        expect(session.operationInProgress).to.be.false;
+      });
+    }
+
+    test('reports a rejected cancelled request as cancellation', async () => {
+      client.authenticateCliWithConnection.callsFake((_params, token: vscode.CancellationToken) => {
+        requestStarted.resolve();
+        return new Promise((_resolve, reject) => token.onCancellationRequested(() => reject(new Error('Cancelled'))));
+      });
+      const attempt = session.run('authenticate');
+      await requestStarted.promise;
+      progressCancellation.cancel();
+      await attempt;
+      expect(onFinished.firstCall.args[2]).to.deep.equal({ status: 'CANCELLED' });
+      expect(session.operationInProgress).to.be.false;
+    });
+
+    for (const dispose of [false, true]) {
+      test(`ignores a late MethodNotFound after ${dispose ? 'disposal' : 'cancellation'}`, async () => {
+        const response = deferred<AiIntegration.AuthenticateCliWithConnectionResponse>();
+        sendRequest.callsFake(() => {
+          requestStarted.resolve();
+          return response.promise;
+        });
+        const attempt = session.run('authenticate');
+        await requestStarted.promise;
+        if (dispose) {
+          session.dispose();
+        } else {
+          progressCancellation.cancel();
+        }
+        response.reject(new ResponseError(ErrorCodes.MethodNotFound, 'Unknown method'));
+        await attempt;
+        expect(client.prepareAuthenticateCliCommand.notCalled).to.be.true;
+        expect(createTerminal.notCalled).to.be.true;
+        expect(session.operationInProgress).to.be.false;
+        if (dispose) {
+          expect(onFinished.notCalled).to.be.true;
+          expect(onChange.calledOnce).to.be.true;
+        } else {
+          expect(onFinished.firstCall.args[2]).to.deep.equal({ status: 'CANCELLED' });
+        }
+      });
+    }
+
+    test('disposal cancels the request without late completion or refresh', async () => {
+      const response = deferred<AiIntegration.AuthenticateCliWithConnectionResponse>();
+      client.authenticateCliWithConnection.callsFake(() => {
+        requestStarted.resolve();
+        return response.promise;
+      });
+      const attempt = session.run('authenticate');
+      await requestStarted.promise;
+      session.dispose();
+      expect(client.authenticateCliWithConnection.firstCall.args[1].isCancellationRequested).to.be.true;
+      response.resolve({ status: status.AUTHENTICATED });
+      await attempt;
+      expect(onFinished.notCalled).to.be.true;
+      expect(onChange.calledOnce).to.be.true;
+      expect(session.notice).to.be.undefined;
+      expect(session.operationInProgress).to.be.false;
+    });
+
+    test('disposal during command preparation prevents opening the fallback terminal', async () => {
+      const command = deferred<AiIntegration.PrepareCliCommandResponse>();
+      const preparing = deferred<void>();
+      client.authenticateCliWithConnection.resolves({ status: status.INTERACTIVE_LOGIN_REQUIRED });
+      client.prepareAuthenticateCliCommand.callsFake(() => {
+        preparing.resolve();
+        return command.promise;
+      });
+      const attempt = session.run('authenticate');
+      await preparing.promise;
+      session.dispose();
+      command.resolve({ executable: 'sonar', arguments: ['auth', 'login'], interactive: true });
+      await attempt;
+      expect(createTerminal.notCalled).to.be.true;
+      expect(onFinished.notCalled).to.be.true;
+      expect(onChange.calledOnce).to.be.true;
+    });
+
+    test('ignores repeated clicks while token authentication is pending', async () => {
+      const response = deferred<AiIntegration.AuthenticateCliWithConnectionResponse>();
+      client.authenticateCliWithConnection.callsFake(() => {
+        requestStarted.resolve();
+        return response.promise;
+      });
+      const attempt = session.run('authenticate');
+      await requestStarted.promise;
+      await session.run('authenticate');
+      expect(client.authenticateCliWithConnection.calledOnce).to.be.true;
+      response.resolve({ status: status.AUTHENTICATED });
+      await attempt;
+      expect(onFinished.calledOnce).to.be.true;
+    });
+  });
 });
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((done, fail) => {
+    resolve = done;
+    reject = fail;
+  });
+  return { promise, resolve, reject };
+}

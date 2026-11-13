@@ -56,6 +56,19 @@ export namespace AiIntegration {
     UNKNOWN = 5
   }
 
+  export enum CliIntegrationRecordingStatus {
+    RECORDED = 0,
+    NOT_RECORDED = 1,
+    UNKNOWN = 2
+  }
+
+  export enum CliIntegrationCheckStatus {
+    CONFIGURED = 0,
+    NOT_CONFIGURED = 1,
+    INVALID = 2,
+    UNKNOWN = 3
+  }
+
   export enum McpConfigurationState {
     NOT_CONFIGURED = 0,
     STANDALONE = 1,
@@ -68,6 +81,7 @@ export namespace AiIntegration {
   export type AiAgentDetectionSourceName = keyof typeof AiAgentDetectionSource;
   export type CliInstallationStatusName = keyof typeof CliInstallationStatus;
   export type CliAuthenticationStatusName = keyof typeof CliAuthenticationStatus;
+  export type CliIntegrationRecordingStatusName = keyof typeof CliIntegrationRecordingStatus;
   export type McpConfigurationStateName = keyof typeof McpConfigurationState;
 
   // Response enums above stay ordinals. Notifications send these names.
@@ -103,6 +117,15 @@ export namespace AiIntegration {
     [CliAuthenticationStatus.UNKNOWN]: 'UNKNOWN'
   };
 
+  export const CLI_INTEGRATION_RECORDING_STATUS_NAMES: Record<
+    CliIntegrationRecordingStatus,
+    CliIntegrationRecordingStatusName
+  > = {
+    [CliIntegrationRecordingStatus.RECORDED]: 'RECORDED',
+    [CliIntegrationRecordingStatus.NOT_RECORDED]: 'NOT_RECORDED',
+    [CliIntegrationRecordingStatus.UNKNOWN]: 'UNKNOWN'
+  };
+
   export const MCP_CONFIGURATION_STATE_NAMES: Record<McpConfigurationState, McpConfigurationStateName> = {
     [McpConfigurationState.NOT_CONFIGURED]: 'NOT_CONFIGURED',
     [McpConfigurationState.STANDALONE]: 'STANDALONE',
@@ -117,6 +140,7 @@ export namespace AiIntegration {
     OPEN_VORTEX_DOCUMENTATION = 'OPEN_VORTEX_DOCUMENTATION',
     OPEN_MCP_DOCUMENTATION = 'OPEN_MCP_DOCUMENTATION',
     INSTALL_CLI = 'INSTALL_CLI',
+    UNINSTALL_CLI = 'UNINSTALL_CLI',
     LOGIN_CLI = 'LOGIN_CLI',
     INTEGRATE_AGENT = 'INTEGRATE_AGENT',
     CONFIGURE_MCP = 'CONFIGURE_MCP',
@@ -189,6 +213,7 @@ export namespace AiIntegration {
     version?: string | null;
     serverUrl?: string | null;
     organization?: string | null;
+    uninstallAvailable?: boolean;
   }
 
   export interface AiIntegrationAgentCapability {
@@ -196,8 +221,6 @@ export namespace AiIntegration {
     detectionSources: AiAgentDetectionSource[];
     cliIntegrationSupported: boolean;
     standaloneMcpSupported: boolean;
-    hookSupported: boolean;
-    skillSupported: boolean;
   }
 
   export interface AiIntegrationConnection {
@@ -206,11 +229,24 @@ export namespace AiIntegration {
     organization?: string | null;
   }
 
+  export interface CliIntegrationConfiguration {
+    path?: string | null;
+    mcp?: CliIntegrationCheckStatus | null;
+    hooks?: CliIntegrationCheckStatus | null;
+  }
+
+  export interface CliIntegrationState {
+    agent: AiAgent;
+    recordingStatus: CliIntegrationRecordingStatus;
+    configurations: CliIntegrationConfiguration[];
+  }
+
   export interface GetAiIntegrationStateResponse {
     cli: SonarQubeCliState;
     agents: AiIntegrationAgentCapability[];
     connectionChoices: AiIntegrationConnection[];
     recommendedConnectionId?: string | null;
+    cliIntegrations?: CliIntegrationState[] | null;
   }
 
   export namespace GetAiIntegrationState {
@@ -239,10 +275,51 @@ export namespace AiIntegration {
     export const type = new lsp.RequestType0<PrepareCliCommandResponse, null>('sonarlint/prepareInstallCliCommand');
   }
 
+  export enum UninstallCliStatus {
+    UNINSTALLED = 0,
+    NOT_AVAILABLE = 1,
+    FAILED = 2
+  }
+
+  export interface UninstallCliResponse {
+    status: UninstallCliStatus;
+    stdout: string;
+    stderr: string;
+    message?: string | null;
+  }
+
+  export namespace UninstallCli {
+    export const type = new lsp.RequestType0<UninstallCliResponse, null>('sonarlint/uninstallCli');
+  }
+
   export namespace PrepareAuthenticateCliCommand {
     export const type = new lsp.RequestType<PrepareAuthenticateCliCommandParams, PrepareCliCommandResponse, null>(
       'sonarlint/prepareAuthenticateCliCommand'
     );
+  }
+
+  export enum AuthenticateCliWithConnectionStatus {
+    AUTHENTICATED = 0,
+    INTERACTIVE_LOGIN_REQUIRED = 1,
+    UPGRADE_REQUIRED = 2,
+    FAILED = 3
+  }
+
+  export interface AuthenticateCliWithConnectionParams {
+    connectionId: string;
+  }
+
+  export interface AuthenticateCliWithConnectionResponse {
+    status: AuthenticateCliWithConnectionStatus;
+    message?: string | null;
+  }
+
+  export namespace AuthenticateCliWithConnection {
+    export const type = new lsp.RequestType<
+      AuthenticateCliWithConnectionParams,
+      AuthenticateCliWithConnectionResponse,
+      null
+    >('sonarlint/authenticateCliWithConnection');
   }
 
   export namespace PrepareIntegrateCliCommand {

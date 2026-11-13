@@ -13,22 +13,22 @@ const loadError = document.getElementById('load-error');
 const content = document.getElementById('content');
 const cliStatus = document.getElementById('cli-status');
 const cliAction = document.getElementById('cli-action');
+const cliUninstall = document.getElementById('cli-uninstall');
+const cliOutput = document.getElementById('cli-output');
 const cliAuthentication = document.getElementById('cli-authentication');
 const cliFeedback = document.getElementById('cli-feedback');
 const detectedLabel = document.getElementById('detected-label');
 const agentList = document.getElementById('agent-list');
 const noAgents = document.getElementById('no-agents');
 const remoteNotice = document.getElementById('remote-notice');
-const hookRow = document.getElementById('hook-row');
-const hookStatus = document.getElementById('hook-status');
-const hookAction = document.getElementById('hook-action');
 const mcpStatus = document.getElementById('mcp-status');
 const mcpDetectedLabel = document.getElementById('mcp-detected-label');
 const mcpList = document.getElementById('mcp-list');
 const noMcpAgents = document.getElementById('no-mcp-agents');
-const legacyInstructionsRow = document.getElementById('legacy-instructions-row');
 
 document.addEventListener('DOMContentLoaded', () => vscode.postMessage({ command: 'ready' }));
+cliUninstall.addEventListener('click', () => vscode.postMessage({ command: 'uninstallCli' }));
+cliOutput.addEventListener('click', () => vscode.postMessage({ command: 'showCliOutput' }));
 window.addEventListener('message', event => {
   if (event.origin && !event.origin.startsWith('vscode-webview://')) {
     return;
@@ -58,9 +58,6 @@ document
 document
   .getElementById('mcp-docs')
   .addEventListener('click', () => vscode.postMessage({ command: 'openMcpDocumentation' }));
-document
-  .getElementById('legacy-instructions-action')
-  .addEventListener('click', () => vscode.postMessage({ command: 'openLegacyInstructions' }));
 
 function render(state) {
   loading.hidden = true;
@@ -83,21 +80,11 @@ function renderCli(state) {
   detectedLabel.textContent = `${agentCount} ${agentCount === 1 ? 'agent' : 'agents'} detected`;
   agentList.hidden = agentCount === 0;
   noAgents.hidden = agentCount !== 0;
-
-  setVisible(hookRow, state.cli.hook.supported);
-  if (state.cli.hook.supported) {
-    hookStatus.textContent = state.cli.hook.configured
-      ? 'Enabled'
-      : 'Runs SonarQube analysis automatically when enabled';
-    hookAction.textContent = state.cli.hook.configured ? 'Open configuration' : 'Enable';
-    hookAction.disabled = !state.cli.hook.configured && state.isRemote;
-    const command = state.cli.hook.configured ? 'openHook' : 'installHook';
-    hookAction.onclick = () => vscode.postMessage({ command });
-  }
 }
 
 function createCliAgentRow(agent, state) {
   const item = document.createElement('li');
+  item.className = 'cli-integration-row';
   const name = document.createElement('span');
   name.textContent = agent.name;
   const details = document.createElement('div');
@@ -106,10 +93,24 @@ function createCliAgentRow(agent, state) {
   item.append(details);
 
   if (agent.supportsCliIntegration) {
+    const status = document.createElement('span');
+    if (agent.recordingStatus === 'RECORDED') {
+      setStatus(status, 'Integration recorded', 'configured');
+    } else if (agent.recordingStatus === 'NOT_RECORDED') {
+      setStatus(status, 'No integration recorded', 'notConfigured');
+    } else {
+      setStatus(status, 'Unknown', 'unavailable');
+    }
+    status.classList.add('cli-recording-status');
+    details.append(agent.recordingStatus === 'RECORDED'
+      ? createConfigurationPathsTooltip(status, agent.configurationPaths)
+      : status);
     const action = document.createElement('button');
     action.className = 'secondary-action agent-action';
     action.type = 'button';
-    action.textContent = 'Integrate for all projects';
+    action.textContent = 'Integrate';
+    action.title = 'Integrate for all projects';
+    action.setAttribute('aria-label', `${action.title}: ${agent.name}`);
     action.disabled = !state.cli.canIntegrate;
     action.addEventListener('click', () => vscode.postMessage({ command: 'integrateAgent', agent: agent.id }));
     item.append(action);
@@ -172,6 +173,8 @@ function renderCliAuthentication(cli) {
 }
 
 function renderCliAction(state) {
+  setVisible(cliUninstall, state.cli.uninstallAvailable);
+  cliUninstall.disabled = state.cli.operationInProgress;
   if (state.cli.operationInProgress) {
     setVisible(cliAction, false);
     cliAction.onclick = undefined;
@@ -190,9 +193,12 @@ function renderCliAction(state) {
 }
 
 function renderCliFeedback(cli) {
-  const message = cli.operationInProgress ? 'Setup is running in the SonarQube CLI terminal.' : cli.notice?.message;
+  const message = cli.operationInProgress
+    ? (cli.operationMessage || 'SonarQube CLI setup is in progress.')
+    : cli.notice?.message;
   cliFeedback.hidden = !message;
   cliFeedback.textContent = message ?? '';
+  setVisible(cliOutput, !cli.operationInProgress && Boolean(cli.notice?.showOutput));
 }
 
 function renderMcp(state) {
@@ -216,8 +222,6 @@ function renderMcp(state) {
   const hasAgents = state.mcp.integrations.length > 0;
   mcpList.hidden = !hasAgents;
   noMcpAgents.hidden = hasAgents;
-
-  setVisible(legacyInstructionsRow, state.mcp.legacyInstructionsConfigured);
 }
 
 function createMcpIntegrationRow(integration, state) {
@@ -229,15 +233,6 @@ function createMcpIntegrationRow(integration, state) {
   const name = document.createElement('span');
   name.textContent = integration.agentName;
   details.append(name);
-  if (integration.configurationPath) {
-    const file = document.createElement('span');
-    file.className = 'supporting-text mcp-configuration-path';
-    file.textContent = integration.configurationPath;
-    details.append(file);
-  }
-
-  const stateAndAction = document.createElement('div');
-  stateAndAction.className = 'mcp-integration-action';
   const status = document.createElement('span');
   const action = document.createElement('button');
   action.className = 'secondary-action';
@@ -249,14 +244,11 @@ function createMcpIntegrationRow(integration, state) {
     setStatus(status, 'Available through CLI', 'unavailable');
   } else if (!integration.standaloneSupported) {
     setStatus(status, 'Unavailable', 'unavailable');
-  } else if (integration.configurationStatus === 'CLI_MANAGED') {
-    setStatus(status, 'Managed by CLI', 'configured');
+  } else if (['CLI_MANAGED', 'STANDALONE'].includes(integration.configurationStatus)) {
+    setStatus(status, 'Configured', 'configured');
     configureOpenAction(action, integration.agentId);
   } else if (needsAttention) {
     setStatus(status, 'Needs attention', 'unavailable');
-    configureOpenAction(action, integration.agentId);
-  } else if (integration.configurationStatus === 'STANDALONE') {
-    setStatus(status, 'Configured', 'configured');
     configureOpenAction(action, integration.agentId);
   } else {
     setStatus(status, 'Not configured', 'notConfigured');
@@ -267,12 +259,15 @@ function createMcpIntegrationRow(integration, state) {
 
   const hasAction = action.textContent.length > 0;
   action.hidden = !hasAction;
-  action.disabled = hasAction && setupAction && (state.mcp.operationInProgress || state.isRemote);
+  action.disabled = hasAction && setupAction && state.mcp.operationInProgress;
   if (integration.operationInProgress) {
     action.textContent = 'Setting up…';
   }
-  stateAndAction.append(status, action);
-  row.append(details, stateAndAction);
+  status.classList.add('mcp-configuration-status');
+  details.append(integration.configurationPath || (hasAction && !setupAction)
+    ? createConfigurationPathsTooltip(status, [integration.configurationPath])
+    : status);
+  row.append(details, action);
 
   if (integration.configurationStatus !== 'CLI_MANAGED' && integration.diagnostic) {
     const message = document.createElement('span');
@@ -281,6 +276,22 @@ function createMcpIntegrationRow(integration, state) {
     row.append(message);
   }
   return row;
+}
+
+function createConfigurationPathsTooltip(status, paths) {
+  const missingPath = 'Configuration path not reported';
+  const labels = (paths.length ? paths : [null]).map(path => path || missingPath);
+  const tooltip = document.createElement('span');
+  tooltip.id = `configuration-paths-${crypto.randomUUID()}`;
+  tooltip.className = 'configuration-path-tooltip supporting-text';
+  tooltip.setAttribute('role', 'tooltip');
+  tooltip.textContent = labels.join('\n');
+  status.tabIndex = 0;
+  status.setAttribute('aria-describedby', tooltip.id);
+  const wrapper = document.createElement('div');
+  wrapper.className = 'configuration-paths';
+  wrapper.append(status, tooltip);
+  return wrapper;
 }
 
 function configureOpenAction(action, agent) {

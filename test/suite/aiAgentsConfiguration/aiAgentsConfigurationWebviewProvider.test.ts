@@ -12,13 +12,10 @@ import * as sinon from 'sinon';
 import * as vscode from 'vscode';
 import { AIAgentsConfigurationWebviewProvider } from '../../../src/aiAgentsConfiguration/aiAgentsConfigurationWebviewProvider';
 import { AiIntegrationTelemetry } from '../../../src/aiAgentsConfiguration/aiIntegrationTelemetry';
-import * as aiAgentHooks from '../../../src/aiAgentsConfiguration/aiAgentHooks';
-import * as aiAgentRuleConfig from '../../../src/aiAgentsConfiguration/aiAgentRuleConfig';
 import * as aiAgentUtils from '../../../src/aiAgentsConfiguration/aiAgentUtils';
-import { IdeHost, IntegrationTarget } from '../../../src/aiAgentsConfiguration/aiAgentUtils';
+import { IdeHost } from '../../../src/aiAgentsConfiguration/aiAgentUtils';
 import * as mcpServerConfig from '../../../src/aiAgentsConfiguration/mcpServerConfig';
 import { AiIntegration } from '../../../src/lsp/aiIntegrationProtocol';
-import { ContextManager } from '../../../src/contextManager';
 import { Commands } from '../../../src/util/commands';
 import * as logging from '../../../src/util/logging';
 import { SETUP_TEARDOWN_HOOK_TIMEOUT } from '../commons';
@@ -35,6 +32,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
   setup(function () {
     this.timeout(SETUP_TEARDOWN_HOOK_TIMEOUT);
     provider = Object.create(AIAgentsConfigurationWebviewProvider.prototype);
+    provider.refreshGeneration = 0;
     mcpInProgressStub = sinon.stub(mcpServerConfig, 'isMCPSetupInProgress').returns(false);
     provider.extensionContext = {
       subscriptions: [],
@@ -54,6 +52,9 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
     provider.languageClient = {
       getAiIntegrationState: getIntegrationState,
       prepareInstallCliCommand,
+      authenticateCliWithConnection: sinon.stub().resolves({
+        status: AiIntegration.AuthenticateCliWithConnectionStatus.INTERACTIVE_LOGIN_REQUIRED
+      }),
       prepareAuthenticateCliCommand,
       prepareIntegrateCliCommand,
       aiIntegrationAction: sinon.stub().resolves(),
@@ -78,7 +79,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
 
   test('reports a manual refresh action around one eligible observation', async () => {
     sinon.stub(aiAgentUtils, 'getCurrentIdeHost').returns({ id: IdeHost.VSCODE, name: 'VS Code' });
-    const refreshWithObservation = sinon.stub(provider, 'refreshWithObservation').resolves(true);
+    const refreshWithObservation = sinon.stub(provider, 'refreshWithObservation').resolves({ ok: true });
 
     await provider.refreshOnRequest();
 
@@ -88,6 +89,172 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
     expect(reports.every(report => report.action === 'REFRESH')).to.be.true;
   });
 
+  test('builds CLI and MCP setup state without legacy fields', async () => {
+    sinon.stub(aiAgentUtils, 'getDetectedIdeAgents').returns([]);
+
+    const state = await provider.buildState();
+
+    expect(state.cli).to.have.all.keys(
+      'installationStatus',
+      'authenticationStatus',
+      'serverUrl',
+      'organization',
+      'operationInProgress',
+      'notice',
+      'primaryAction',
+      'canIntegrate',
+      'uninstallAvailable'
+    );
+    expect(state.mcp).to.have.all.keys(
+      'integrations',
+      'configuredCount',
+      'configurableCount',
+      'operationInProgress'
+    );
+  });
+
+  test('offers uninstall for any backend-supported local installation, and hides it remotely or when missing', async () => {
+    sinon.stub(aiAgentUtils, 'getDetectedIdeAgents').returns([]);
+    sinon.stub(vscode.env, 'remoteName').value(undefined);
+    const backendState = cliIntegrationState();
+    backendState.cli.uninstallAvailable = true;
+    getIntegrationState.resolves(backendState);
+    expect((await provider.buildState()).cli.uninstallAvailable).to.be.true;
+
+    sinon.stub(vscode.env, 'remoteName').value('ssh-remote');
+    expect((await provider.buildState()).cli.uninstallAvailable).to.be.false;
+    sinon.stub(vscode.env, 'remoteName').value(undefined);
+    delete backendState.cli.uninstallAvailable;
+    expect((await provider.buildState()).cli.uninstallAvailable).to.be.false;
+  });
+
+  test('routes uninstall callbacks and opens existing output', async () => {
+    sinon.stub(aiAgentUtils, 'getCurrentIdeHost').returns({ id: IdeHost.VSCODE, name: 'VS Code' });
+    const uninstall = sinon.stub(provider.getCliSetup(), 'uninstall').resolves();
+    const showOutput = sinon.stub(logging, 'showLogOutput');
+
+    await provider.handleMessage({ command: 'uninstallCli' });
+    await provider.handleMessage({ command: 'showCliOutput' });
+
+    const [onAccepted, onFinished] = uninstall.firstCall.args;
+    onAccepted();
+    onFinished({ status: AiIntegration.AiIntegrationActionStatus.SUCCEEDED });
+
+    expect(provider.languageClient.aiIntegrationAction.getCalls().map(call => call.args[0])).to.deep.equal([
+      { action: 'UNINSTALL_CLI', status: 'STARTED', agent: null, host: 'VSCODE' },
+      { action: 'UNINSTALL_CLI', status: 'SUCCEEDED', agent: null, host: 'VSCODE' }
+    ]);
+    expect(showOutput.calledOnce).to.be.true;
+  });
+
+  function cliIntegrationState(
+    cliIntegrations?: AiIntegration.CliIntegrationState[] | null
+  ): AiIntegration.GetAiIntegrationStateResponse {
+    return {
+      cli: {
+        installationStatus: AiIntegration.CliInstallationStatus.INSTALLED,
+        authenticationStatus: AiIntegration.CliAuthenticationStatus.AUTHENTICATED
+      },
+      agents: [{
+        agent: AiIntegration.AiAgent.CODEX,
+        detectionSources: [AiIntegration.AiAgentDetectionSource.CLI],
+        cliIntegrationSupported: true,
+        standaloneMcpSupported: false
+      }],
+      connectionChoices: [],
+      cliIntegrations
+    };
+  }
+
+  test('maps recording ordinals independently of configuration health', async () => {
+    for (const [recordingStatus, expected] of [
+      [AiIntegration.CliIntegrationRecordingStatus.RECORDED, 'RECORDED'],
+      [AiIntegration.CliIntegrationRecordingStatus.NOT_RECORDED, 'NOT_RECORDED'],
+      [AiIntegration.CliIntegrationRecordingStatus.UNKNOWN, 'UNKNOWN'],
+      [99 as AiIntegration.CliIntegrationRecordingStatus, 'UNKNOWN']
+    ] as const) {
+      getIntegrationState.resolves(cliIntegrationState([{
+        agent: AiIntegration.AiAgent.CODEX,
+        recordingStatus,
+        configurations: [{ mcp: AiIntegration.CliIntegrationCheckStatus.INVALID }]
+      }]));
+
+      const state = await provider.buildState();
+
+      expect(state.agents[0].recordingStatus).to.equal(expected);
+    }
+  });
+
+  test('falls back to unknown for old responses and missing agent records', async () => {
+    for (const cliIntegrations of [undefined, null, [], [{
+      agent: AiIntegration.AiAgent.CLAUDE_CODE,
+      recordingStatus: AiIntegration.CliIntegrationRecordingStatus.RECORDED,
+      configurations: []
+    }]]) {
+      const response = cliIntegrationState(cliIntegrations);
+      if (cliIntegrations === undefined) {
+        delete response.cliIntegrations;
+      }
+      getIntegrationState.resolves(response);
+
+      const state = await provider.buildState();
+
+      expect(state.agents[0].recordingStatus).to.equal('UNKNOWN');
+      expect(state.agents[0].configurationPaths).to.deep.equal([]);
+    }
+  });
+
+  test('preserves duplicate and pathless configuration paths', async () => {
+    getIntegrationState.resolves(cliIntegrationState([{
+      agent: AiIntegration.AiAgent.CODEX,
+      recordingStatus: AiIntegration.CliIntegrationRecordingStatus.RECORDED,
+      configurations: [
+        { path: '/project/config', mcp: 0, hooks: 1 },
+        { path: '/project/config', hooks: 2 },
+        { mcp: 3, hooks: null },
+        { path: null },
+        {}
+      ]
+    }]));
+
+    const state = await provider.buildState();
+
+    expect(state.agents[0].configurationPaths).to.deep.equal(['/project/config', '/project/config', null, null, null]);
+  });
+
+  test('does not infer detection from recorded integrations', async () => {
+    const response = cliIntegrationState([{
+      agent: AiIntegration.AiAgent.CODEX,
+      recordingStatus: AiIntegration.CliIntegrationRecordingStatus.RECORDED,
+      configurations: []
+    }]);
+    response.agents[0].detectionSources = [];
+    getIntegrationState.resolves(response);
+
+    const state = await provider.buildState();
+
+    expect(state.agents).to.deep.equal([]);
+  });
+
+  test('recording status leaves authentication, remote and setup gates in force', async () => {
+    const response = cliIntegrationState([{
+      agent: AiIntegration.AiAgent.CODEX,
+      recordingStatus: AiIntegration.CliIntegrationRecordingStatus.RECORDED,
+      configurations: []
+    }]);
+    const remote = sinon.stub(vscode.env, 'remoteName').value(undefined);
+    getIntegrationState.resolves(response);
+    expect((await provider.buildState()).cli.canIntegrate).to.be.true;
+    response.cli.authenticationStatus = AiIntegration.CliAuthenticationStatus.UNAUTHENTICATED;
+    expect((await provider.buildState()).cli.canIntegrate).to.be.false;
+    response.cli.authenticationStatus = AiIntegration.CliAuthenticationStatus.AUTHENTICATED;
+    remote.value('ssh-remote');
+    expect((await provider.buildState()).cli.canIntegrate).to.be.false;
+    remote.value(undefined);
+    provider.cliSetupSession = { operationInProgress: true };
+    expect((await provider.buildState()).cli.canIntegrate).to.be.false;
+  });
+
   test('builds independent MCP state for detected agents', async () => {
     const detectedAgents = [
       { id: AiIntegration.AiAgent.GITHUB_COPILOT, name: 'Copilot in VS Code', source: 'extension' as const },
@@ -95,10 +262,8 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
       { id: AiIntegration.AiAgent.CODEX, name: 'Codex', source: 'extension' as const }
     ];
     sinon.stub(aiAgentUtils, 'getCurrentIdeHost').returns({ id: IdeHost.VSCODE, name: 'VS Code' });
-    sinon.stub(aiAgentUtils, 'getCurrentAgentWithHookSupport').returns(undefined);
     sinon.stub(aiAgentUtils, 'getDetectedIdeAgents').returns(detectedAgents);
     sinon.stub(aiAgentUtils, 'isAgentActiveForMcp').returns(true);
-    sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(true);
     getIntegrationState.resolves({
       cli: {
         installationStatus: 1,
@@ -108,9 +273,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
         agent: agent.id,
         detectionSources: [AiIntegration.AiAgentDetectionSource.IDE],
         cliIntegrationSupported: agent.id === AiIntegration.AiAgent.CODEX,
-        standaloneMcpSupported: agent.id !== AiIntegration.AiAgent.CODEX,
-        hookSupported: false,
-        skillSupported: false
+        standaloneMcpSupported: agent.id !== AiIntegration.AiAgent.CODEX
       })),
       connectionChoices: []
     });
@@ -175,12 +338,10 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
       { id: AiIntegration.AiAgent.CLAUDE_CODE, name: 'Claude Code', source: 'extension' as const }
     ];
     sinon.stub(aiAgentUtils, 'getCurrentIdeHost').returns({ id: IdeHost.VSCODE, name: 'VS Code' });
-    sinon.stub(aiAgentUtils, 'getCurrentAgentWithHookSupport').returns(undefined);
     sinon.stub(aiAgentUtils, 'getDetectedIdeAgents').returns(detectedAgents);
     sinon
       .stub(aiAgentUtils, 'isAgentActiveForMcp')
       .callsFake(agent => agent !== AiIntegration.AiAgent.GITHUB_COPILOT);
-    sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(false);
     getIntegrationState.resolves({
       cli: {
         installationStatus: AiIntegration.CliInstallationStatus.NOT_INSTALLED,
@@ -190,9 +351,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
         agent: agent.id,
         detectionSources: [AiIntegration.AiAgentDetectionSource.IDE],
         cliIntegrationSupported: false,
-        standaloneMcpSupported: true,
-        hookSupported: false,
-        skillSupported: false
+        standaloneMcpSupported: true
       })),
       connectionChoices: []
     });
@@ -212,14 +371,11 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
   });
 
   test('includes CLI-only agents and inspects their supported standalone configurations', async () => {
-    const setMcpContext = sinon.stub(ContextManager.instance, 'setMCPServerSupportedAgentContext');
     sinon.stub(aiAgentUtils, 'getCurrentIdeHost').returns({ id: IdeHost.VSCODE, name: 'VS Code' });
-    sinon.stub(aiAgentUtils, 'getCurrentAgentWithHookSupport').returns(undefined);
     sinon.stub(aiAgentUtils, 'getDetectedIdeAgents').returns([
       { id: AiIntegration.AiAgent.GITHUB_COPILOT, name: 'Copilot in VS Code', source: 'extension' }
     ]);
     sinon.stub(aiAgentUtils, 'isAgentActiveForMcp').returns(true);
-    sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(false);
     const capability = (
       agent: AiIntegration.AiAgent,
       detectionSources: AiIntegration.AiAgentDetectionSource[],
@@ -228,9 +384,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
       agent,
       detectionSources,
       cliIntegrationSupported: true,
-      standaloneMcpSupported,
-      hookSupported: false,
-      skillSupported: false
+      standaloneMcpSupported
     });
     getIntegrationState.resolves({
       cli: {
@@ -264,7 +418,6 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
       AiIntegration.AiAgent.CLAUDE_CODE
     ]);
     expect(state.agents).to.have.length(5);
-    expect(setMcpContext.calledOnceWithExactly(true)).to.be.true;
     expect(inspect.getCalls().map(call => call.args[1])).to.have.members([
       AiIntegration.AiAgent.GITHUB_COPILOT,
       AiIntegration.AiAgent.CURSOR,
@@ -290,9 +443,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
       { id: AiIntegration.AiAgent.CLAUDE_CODE, name: 'Claude Code', source: 'extension' as const }
     ];
     sinon.stub(aiAgentUtils, 'getCurrentIdeHost').returns({ id: IdeHost.CURSOR, name: 'Cursor' });
-    sinon.stub(aiAgentUtils, 'getCurrentAgentWithHookSupport').returns(undefined);
     sinon.stub(aiAgentUtils, 'getDetectedIdeAgents').returns(detectedAgents);
-    sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(false);
     getIntegrationState.resolves({
       cli: {
         installationStatus: AiIntegration.CliInstallationStatus.NOT_INSTALLED,
@@ -302,9 +453,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
         agent: agent.id,
         detectionSources: [AiIntegration.AiAgentDetectionSource.IDE],
         cliIntegrationSupported: false,
-        standaloneMcpSupported: true,
-        hookSupported: false,
-        skillSupported: false
+        standaloneMcpSupported: true
       })),
       connectionChoices: []
     });
@@ -326,9 +475,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
   test('shows an existing standalone config as configured', async () => {
     const cursor = { id: AiIntegration.AiAgent.CURSOR, name: 'Cursor', source: 'ide' as const };
     sinon.stub(aiAgentUtils, 'getCurrentIdeHost').returns({ id: IdeHost.CURSOR, name: 'Cursor' });
-    sinon.stub(aiAgentUtils, 'getCurrentAgentWithHookSupport').returns(undefined);
     sinon.stub(aiAgentUtils, 'getDetectedIdeAgents').returns([cursor]);
-    sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(false);
     getIntegrationState.resolves({
       cli: {
         installationStatus: AiIntegration.CliInstallationStatus.NOT_INSTALLED,
@@ -339,9 +486,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
           agent: cursor.id,
           detectionSources: [AiIntegration.AiAgentDetectionSource.IDE],
           cliIntegrationSupported: false,
-          standaloneMcpSupported: true,
-          hookSupported: false,
-          skillSupported: false
+          standaloneMcpSupported: true
         }
       ],
       connectionChoices: []
@@ -363,9 +508,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
       { id: AiIntegration.AiAgent.CLAUDE_CODE, name: 'Claude Code', source: 'extension' as const }
     ];
     sinon.stub(aiAgentUtils, 'getCurrentIdeHost').returns({ id: IdeHost.CURSOR, name: 'Cursor' });
-    sinon.stub(aiAgentUtils, 'getCurrentAgentWithHookSupport').returns(undefined);
     sinon.stub(aiAgentUtils, 'getDetectedIdeAgents').returns(detectedAgents);
-    sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(false);
     getIntegrationState.resolves({
       cli: {
         installationStatus: AiIntegration.CliInstallationStatus.NOT_INSTALLED,
@@ -375,9 +518,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
         agent: agent.id,
         detectionSources: [AiIntegration.AiAgentDetectionSource.IDE],
         cliIntegrationSupported: false,
-        standaloneMcpSupported: true,
-        hookSupported: false,
-        skillSupported: false
+        standaloneMcpSupported: true
       })),
       connectionChoices: []
     });
@@ -405,26 +546,11 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
     });
   });
 
-  test('includes the current IDE hook state', async () => {
-    sinon.stub(aiAgentUtils, 'getCurrentIdeHost').returns({ id: IdeHost.WINDSURF, name: 'Windsurf' });
-    sinon.stub(aiAgentUtils, 'getCurrentAgentWithHookSupport').returns(IntegrationTarget.WINDSURF);
-    sinon.stub(aiAgentUtils, 'getDetectedIdeAgents').returns([]);
-    sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(false);
-    sinon.stub(aiAgentHooks, 'isHookInstalled').resolves(true);
-
-    const state = await provider.buildState();
-
-    expect(state.cli.hook).to.deep.equal({ supported: true, configured: true });
-    expect(state.mcp.legacyInstructionsConfigured).to.be.false;
-  });
-
   test('preserves an unusable CLI status', async () => {
     sinon.stub(aiAgentUtils, 'getCurrentIdeHost').returns({ id: IdeHost.VSCODE, name: 'VS Code' });
-    sinon.stub(aiAgentUtils, 'getCurrentAgentWithHookSupport').returns(undefined);
     sinon
       .stub(aiAgentUtils, 'getDetectedIdeAgents')
       .returns([{ id: AiIntegration.AiAgent.CODEX, name: 'Codex', source: 'extension' }]);
-    sinon.stub(aiAgentRuleConfig, 'isSonarQubeRulesFileConfigured').resolves(false);
     getIntegrationState.resolves({
       cli: {
         installationStatus: AiIntegration.CliInstallationStatus.UNUSABLE,
@@ -435,9 +561,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
           agent: AiIntegration.AiAgent.CODEX,
           detectionSources: [AiIntegration.AiAgentDetectionSource.IDE],
           cliIntegrationSupported: true,
-          standaloneMcpSupported: false,
-          hookSupported: false,
-          skillSupported: false
+          standaloneMcpSupported: false
         }
       ],
       connectionChoices: []
@@ -449,49 +573,27 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
     expect(state.agents[0].supportsCliIntegration).to.be.true;
   });
 
-  test('keeps CLI setup feedback on webview load and clears it on explicit refresh', async () => {
-    const notice = { outcome: 'completed', message: 'Setup finished.' };
+  test('refreshes recorded integration state after CLI setup completes', async () => {
+    const response = cliIntegrationState([{
+      agent: AiIntegration.AiAgent.CODEX,
+      recordingStatus: AiIntegration.CliIntegrationRecordingStatus.NOT_RECORDED,
+      configurations: []
+    }]);
+    getIntegrationState.resolves(response);
     const postMessage = sinon.stub().resolves();
-    provider.cliSetupSession = { notice };
     provider.view = { webview: { postMessage } };
-    provider.buildState = sinon.stub().callsFake(async () => ({ cli: { notice: provider.cliSetupSession.notice } }));
+    const terminal = { show: sinon.stub() };
+    sinon.stub(vscode.window, 'createTerminal').returns(terminal as unknown as vscode.Terminal);
+    sinon.stub(vscode.window, 'onDidCloseTerminal').returns({ dispose: sinon.stub() });
+    prepareIntegrateCliCommand.resolves({ executable: '/usr/local/bin/sonar', arguments: ['integrate', 'codex'], interactive: true });
 
-    await provider.handleMessage({ command: 'ready' });
-    expect(postMessage.firstCall.args[0].state.cli.notice).to.equal(notice);
+    await provider.handleMessage({ command: 'integrateAgent', agent: AiIntegration.AiAgent.CODEX });
+    expect(postMessage.firstCall.args[0].state.agents[0].recordingStatus).to.equal('NOT_RECORDED');
+    response.cliIntegrations[0].recordingStatus = AiIntegration.CliIntegrationRecordingStatus.RECORDED;
+    await provider.cliSetupSession.handleTerminalClosed({ code: 0, reason: vscode.TerminalExitReason.Process });
 
-    await provider.handleMessage({ command: 'refresh' });
-    expect(provider.cliSetupSession.notice).to.be.undefined;
-    expect(postMessage.secondCall.args[0].state.cli.notice).to.be.undefined;
-  });
-
-  test('shows a generic error state and recovers on a later refresh', async () => {
-    const postMessage = sinon.stub().resolves();
-    const log = sinon.stub(logging, 'logToSonarLintOutput');
-    const state = { cli: { installationStatus: 'INSTALLED' } };
-    provider.view = { webview: { postMessage } };
-    provider.buildState = sinon
-      .stub()
-      .onFirstCall()
-      .rejects(new Error('backend details'))
-      .onSecondCall()
-      .resolves(state);
-
-    await provider.refresh();
-    await provider.refresh();
-
-    expect(postMessage.firstCall.args).to.deep.equal([{ command: 'error' }]);
-    expect(postMessage.secondCall.args).to.deep.equal([{ command: 'state', state }]);
-    expect(log.calledOnceWith('Could not refresh AI integrations state: Error: backend details')).to.be.true;
-  });
-
-  test('does not reject when the view is disposed during refresh', async () => {
-    const postMessage = sinon.stub().rejects(new Error('Webview is disposed'));
-    provider.view = { webview: { postMessage } };
-    provider.buildState = sinon.stub().resolves({});
-
-    await provider.refresh();
-
-    expect(postMessage.callCount).to.equal(2);
+    expect(postMessage.lastCall.args[0].state.agents[0].recordingStatus).to.equal('RECORDED');
+    expect(provider.languageClient.aiIntegrationCliStateObserved.calledOnce).to.be.true;
   });
 
   test('routes MCP setup through the existing command', async () => {
@@ -503,14 +605,6 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
       Commands.CONFIGURE_MCP_SERVER,
       AiIntegration.AiAgent.CURSOR
     )).to.be.true;
-  });
-
-  test('opens hook configuration from the CLI card', async () => {
-    const executeCommand = sinon.stub(vscode.commands, 'executeCommand').resolves();
-
-    await provider.handleMessage({ command: 'openHook' });
-
-    expect(executeCommand.calledOnceWith(Commands.OPEN_AI_AGENT_HOOK_CONFIGURATION)).to.be.true;
   });
 
   test('opens the SonarQube CLI guide from the CLI card', async () => {
@@ -555,7 +649,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
       })
     ).to.be.true;
     expect(terminal.show.calledTwice).to.be.true;
-    expect(provider.extensionContext.subscriptions).to.deep.equal([closeListener]);
+    expect(provider.extensionContext.subscriptions).to.deep.equal([provider.cliSetupSession, closeListener]);
 
     const exitStatus = { code: undefined, reason: vscode.TerminalExitReason.User };
     Object.assign(terminal, { exitStatus });
@@ -691,9 +785,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
           agent: AiIntegration.AiAgent.CLAUDE_CODE,
           detectionSources: [AiIntegration.AiAgentDetectionSource.IDE],
           cliIntegrationSupported: true,
-          standaloneMcpSupported: true,
-          hookSupported: true,
-          skillSupported: true
+          standaloneMcpSupported: true
         }
       ],
       connectionChoices: []
@@ -729,9 +821,7 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
         agent: AiIntegration.AiAgent.CODEX,
         detectionSources: [AiIntegration.AiAgentDetectionSource.CLI],
         cliIntegrationSupported: true,
-        standaloneMcpSupported: false,
-        hookSupported: false,
-        skillSupported: false
+        standaloneMcpSupported: false
       }],
       connectionChoices: []
     });
@@ -798,15 +888,5 @@ suite('AIAgentsConfigurationWebviewProvider', () => {
     await provider.handleMessage({ command: 'configureMcp', agent: AiIntegration.AiAgent.CURSOR });
 
     expect(executeCommand.calledOnceWithExactly(Commands.CONFIGURE_MCP_SERVER, AiIntegration.AiAgent.CURSOR)).to.be.true;
-  });
-
-  test('opens only existing legacy instructions', async () => {
-    const executeCommand = sinon.stub(vscode.commands, 'executeCommand').resolves();
-    provider.refresh = sinon.stub().resolves();
-
-    await provider.handleMessage({ command: 'openLegacyInstructions' });
-
-    expect(executeCommand.calledOnceWith(Commands.OPEN_SONARQUBE_RULES_FILE, false)).to.be.true;
-    expect(provider.refresh.called).to.be.false;
   });
 });

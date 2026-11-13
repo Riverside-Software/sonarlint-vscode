@@ -10,6 +10,7 @@ import * as os from 'node:os';
 import * as vscode from 'vscode';
 import { AiIntegration } from '../lsp/aiIntegrationProtocol';
 import { SonarLintExtendedLanguageClient } from '../lsp/client';
+import { logToSonarLintOutput } from '../util/logging';
 import { getAiIntegrationStateParams, getDetectedIntegrationAgents } from './aiAgentUtils';
 
 // Setup returns this result. The view reports it; cli setup does not talk to telemetry.
@@ -32,6 +33,7 @@ export interface CliPrimaryAction {
 export interface CliSetupNotice {
   outcome: SetupOutcome;
   message: string;
+  showOutput?: boolean;
 }
 
 export type ConnectionPick =
@@ -39,6 +41,9 @@ export type ConnectionPick =
 
 const SETUP_START_FAILED = 'Could not start SonarQube CLI setup. Try again.';
 const LOGIN_CANCELLED = 'SonarQube CLI login was cancelled.';
+const LOGIN_COMPLETED = 'SonarQube CLI is authenticated. Setup state has been refreshed.';
+const LOGIN_FAILED = 'Could not authenticate SonarQube CLI. Try again.';
+const CLI_UPGRADE_REQUIRED = 'Update SonarQube CLI to the latest version to reuse a saved connection token.';
 const LOGIN_NOT_INTERACTIVE = 'SonarQube CLI login must run interactively. Refresh and try again.';
 const INTEGRATE_NOT_INTERACTIVE = 'Agent integration must run interactively. Refresh and try again.';
 const TERMINAL_CANCELLED = 'SonarQube CLI setup was cancelled.';
@@ -51,6 +56,65 @@ const LABEL_TROUBLESHOOT = 'Open troubleshooting guide';
 const LABEL_SIGN_IN = 'Sign in with SonarQube CLI';
 const LABEL_REFRESH = 'Refresh';
 const PLACEHOLDER_CONNECTION = 'Choose a SonarQube connection for CLI login';
+const UNINSTALL_FAILED = 'Could not uninstall SonarQube CLI. Review the output for details.';
+const UNINSTALL_UNAVAILABLE = 'Only an official per-user CLI installation can be uninstalled.';
+const UNINSTALL_COMPLETED =
+  'SonarQube CLI was removed. Remove its PATH entry manually. Some configuration may remain; review the output.';
+const SETUP_IN_PROGRESS = 'SonarQube CLI setup is in progress.';
+const UNINSTALL_IN_PROGRESS = 'Uninstalling SonarQube CLI…';
+const WINDOWS_PATH_HINT = String.raw`Remove %LOCALAPPDATA%\sonarqube-cli\bin from your user Path in Environment Variables. Reopen terminals.`;
+// install.sh detect_profile() writes the export to the first profile that exists: bash prefers
+// ~/.bashrc then ~/.bash_profile, zsh prefers ~/.zshrc then ~/.zprofile, and the fallback is ~/.profile.
+const UNIX_PATH_HINT =
+  'Remove $HOME/.local/share/sonarqube-cli/bin from PATH in the shell profile the installer updated ' +
+  '(~/.bashrc or ~/.bash_profile, ~/.zshrc or ~/.zprofile, or ~/.profile). Reopen terminals.';
+
+export function cliPathCleanupHint(platform: NodeJS.Platform = os.platform()): string {
+  return platform === 'win32' ? WINDOWS_PATH_HINT : UNIX_PATH_HINT;
+}
+
+interface UninstallAttempt {
+  outcome: AiIntegrationOutcome;
+  notice?: CliSetupNotice;
+}
+
+function uninstallFailure(error: unknown): UninstallAttempt {
+  const diagnostic = error instanceof Error ? error.message : UNINSTALL_FAILED;
+  logToSonarLintOutput(`Could not uninstall SonarQube CLI: ${diagnostic}`);
+  return {
+    outcome: { status: AiIntegration.AiIntegrationActionStatus.FAILED },
+    notice: { outcome: 'failed', message: UNINSTALL_FAILED, showOutput: true }
+  };
+}
+
+function uninstallAttempt(response: AiIntegration.UninstallCliResponse): UninstallAttempt {
+  switch (response.status) {
+    case AiIntegration.UninstallCliStatus.UNINSTALLED:
+      return {
+        outcome: { status: AiIntegration.AiIntegrationActionStatus.SUCCEEDED },
+        notice: {
+          outcome: 'completed',
+          message: `${UNINSTALL_COMPLETED}\n\n${cliPathCleanupHint()}`,
+          showOutput: true
+        }
+      };
+    case AiIntegration.UninstallCliStatus.NOT_AVAILABLE:
+      return {
+        outcome: { status: AiIntegration.AiIntegrationActionStatus.FAILED },
+        notice: { outcome: 'failed', message: response.message || UNINSTALL_UNAVAILABLE, showOutput: true }
+      };
+    case AiIntegration.UninstallCliStatus.FAILED:
+      return {
+        outcome: { status: AiIntegration.AiIntegrationActionStatus.FAILED },
+        notice: { outcome: 'failed', message: response.message || UNINSTALL_FAILED, showOutput: true }
+      };
+    default:
+      return {
+        outcome: { status: AiIntegration.AiIntegrationActionStatus.UNKNOWN },
+        notice: { outcome: 'failed', message: response.message || UNINSTALL_FAILED, showOutput: true }
+      };
+  }
+}
 
 export function resolveCliPrimaryAction(
   installationStatus: AiIntegration.CliInstallationStatus,
@@ -113,38 +177,165 @@ export class CliSetupSession {
   private activeSetupTerminal?: vscode.Terminal;
   private terminalCloseListener?: vscode.Disposable;
   private inProgress = false;
+  private uninstalling = false;
+  private progressText = SETUP_IN_PROGRESS;
   private activeStep?: CliSetupStep;
   private activeAgent?: AiIntegration.AiAgent;
+  private activeAuthentication?: vscode.CancellationTokenSource;
+  private disposed = false;
   notice?: CliSetupNotice;
 
   constructor(
     private readonly extensionContext: vscode.ExtensionContext,
     private readonly languageClient: SonarLintExtendedLanguageClient,
-    private readonly onChange: (report?: boolean) => Thenable<void>,
+    private readonly onChange: (report?: boolean) => Thenable<boolean | void>,
     private readonly onFinished?: (
       step: CliSetupStep,
       agent: AiIntegration.AiAgent | undefined,
       outcome: AiIntegrationOutcome
     ) => void | Thenable<void> | Promise<void>
-  ) {}
+  ) {
+    extensionContext.subscriptions.push(this);
+  }
+
+  dispose(): void {
+    this.disposed = true;
+    this.activeAuthentication?.cancel();
+    this.inProgress = false;
+  }
 
   get operationInProgress(): boolean {
     return this.inProgress;
   }
 
+  get operationMessage(): string {
+    return this.progressText;
+  }
+
+  async uninstall(
+    onAccepted?: () => void | Thenable<void>,
+    onFinished?: (outcome: AiIntegrationOutcome) => void | Thenable<void>
+  ): Promise<void> {
+    if (this.disposed || this.inProgress || this.uninstalling || vscode.env.remoteName !== undefined) {
+      return;
+    }
+    this.uninstalling = true;
+    const owned = { progress: false };
+    this.notice = undefined;
+    await onAccepted?.();
+    try {
+      const result = await this.confirmAndUninstall(owned);
+      if (!this.disposed && (owned.progress || !this.inProgress)) {
+        this.notice = result.notice;
+      }
+      await onFinished?.(result.outcome);
+    } finally {
+      this.uninstalling = false;
+      const yieldedToRunningOperation = !owned.progress && this.inProgress;
+      if (owned.progress) {
+        this.inProgress = false;
+      }
+      if (!this.disposed) {
+        await (yieldedToRunningOperation ? this.onChange() : this.onChange(true));
+      }
+    }
+  }
+
+  // The setup lock stays down until the user confirms, so the panel does not say setup is running.
+  private async confirmAndUninstall(owned: { progress: boolean }): Promise<UninstallAttempt> {
+    const cancelled = AiIntegration.AiIntegrationActionStatus.CANCELLED;
+    try {
+      const uninstallAvailable = await this.onChange();
+      if (this.disposed) {
+        return { outcome: { status: cancelled } };
+      }
+      if (uninstallAvailable === false) {
+        return {
+          outcome: { status: AiIntegration.AiIntegrationActionStatus.FAILED },
+          notice: { outcome: 'failed', message: UNINSTALL_UNAVAILABLE }
+        };
+      }
+      const confirm = await vscode.window.showWarningMessage(
+        'Uninstall SonarQube CLI?',
+        {
+          modal: true,
+          detail:
+            'This removes the shared CLI used by terminals, IDEs, and agents. Reset removes credentials and registered integrations and may revoke recorded server tokens.'
+        },
+        'Uninstall'
+      );
+      if (confirm !== 'Uninstall' || this.disposed || this.inProgress) {
+        return { outcome: { status: cancelled } };
+      }
+    } catch (error) {
+      return this.disposed ? { outcome: { status: cancelled } } : uninstallFailure(error);
+    }
+
+    this.inProgress = true;
+    owned.progress = true;
+    this.progressText = UNINSTALL_IN_PROGRESS;
+    let uninstallRequested = false;
+    try {
+      await this.onChange();
+      if (this.disposed) {
+        return { outcome: { status: cancelled } };
+      }
+      const response = await vscode.window.withProgress(
+        { location: vscode.ProgressLocation.Notification, title: 'Uninstalling SonarQube CLI', cancellable: false },
+        () => {
+          if (this.disposed) {
+            throw new vscode.CancellationError();
+          }
+          uninstallRequested = true;
+          return this.languageClient.uninstallCli();
+        }
+      );
+      if (!response) {
+        return { outcome: { status: AiIntegration.AiIntegrationActionStatus.UNKNOWN } };
+      }
+      for (const output of [response.stdout, response.stderr, response.message]) {
+        if (output) {
+          logToSonarLintOutput(output);
+        }
+      }
+      return uninstallAttempt(response);
+    } catch (error) {
+      if (this.disposed && !uninstallRequested) {
+        return { outcome: { status: cancelled } };
+      }
+      return uninstallFailure(error);
+    }
+  }
+
   async run(step: CliSetupStep, agentId?: AiIntegration.AiAgent): Promise<void> {
+    if (this.disposed) {
+      return;
+    }
     if (this.inProgress) {
       this.activeSetupTerminal?.show();
       return;
     }
 
     this.inProgress = true;
+    this.progressText = SETUP_IN_PROGRESS;
     this.activeStep = step;
     this.activeAgent = agentId;
     this.notice = undefined;
     // Repaint the in-progress state. Observation waits until the attempt finishes.
-    await this.onChange();
-    const start = await this.begin(step, agentId);
+    let start: SetupStart;
+    try {
+      await this.onChange();
+      if (this.disposed) {
+        return;
+      }
+      start = await this.begin(step, agentId);
+    } catch (error) {
+      this.inProgress = false;
+      throw error;
+    }
+    if (this.disposed) {
+      return;
+    }
     if (start.kind === 'started') {
       return;
     }
@@ -152,7 +343,9 @@ export class CliSetupSession {
     try {
       await this.finish(start.outcome);
     } finally {
-      await this.onChange(true);
+      if (!this.disposed) {
+        await this.onChange(true);
+      }
     }
   }
 
@@ -160,7 +353,9 @@ export class CliSetupSession {
     try {
       return await this.execute(step, agentId);
     } catch {
-      this.notice = { outcome: 'failed', message: SETUP_START_FAILED };
+      if (!this.disposed) {
+        this.notice = { outcome: 'failed', message: SETUP_START_FAILED };
+      }
       return didNotStart(AiIntegration.AiIntegrationActionStatus.FAILED);
     }
   }
@@ -189,6 +384,9 @@ export class CliSetupSession {
     const state = await this.languageClient.getAiIntegrationState(
       getAiIntegrationStateParams(AiIntegration.AiIntegrationScope.GLOBAL)
     );
+    if (this.disposed) {
+      return didNotStart(AiIntegration.AiIntegrationActionStatus.CANCELLED);
+    }
     const isRemote = vscode.env.remoteName !== undefined;
     switch (step) {
       case 'install':
@@ -222,15 +420,77 @@ export class CliSetupSession {
       return didNotStart(AiIntegration.AiIntegrationActionStatus.FAILED);
     }
     const pick = await selectConnection(state);
-    if (pick.kind === 'cancelled') {
-      this.notice = { outcome: 'cancelled', message: LOGIN_CANCELLED };
-      return didNotStart(AiIntegration.AiIntegrationActionStatus.CANCELLED);
+    if (pick.kind === 'cancelled' || this.disposed) {
+      return this.authenticationCancelled();
     }
-    return this.openInteractiveCommand(
-      'SonarQube CLI login',
-      await this.languageClient.prepareAuthenticateCliCommand(authenticateParams(pick)),
-      LOGIN_NOT_INTERACTIVE
-    );
+    const cancellation = new vscode.CancellationTokenSource();
+    this.activeAuthentication = cancellation;
+    try {
+      if (pick.kind === 'connection') {
+        const response = await vscode.window.withProgress<AiIntegration.AuthenticateCliWithConnectionResponse>(
+          { location: vscode.ProgressLocation.Notification, title: 'Signing in to SonarQube CLI', cancellable: true },
+          async (_progress, token) => {
+            if (token.isCancellationRequested) {
+              cancellation.cancel();
+            }
+            if (cancellation.token.isCancellationRequested) {
+              throw new vscode.CancellationError();
+            }
+            const listener = token.onCancellationRequested(() => cancellation.cancel());
+            try {
+              return await this.languageClient.authenticateCliWithConnection(
+                { connectionId: pick.connection.connectionId },
+                cancellation.token
+              );
+            } finally {
+              listener.dispose();
+            }
+          }
+        );
+        if (cancellation.token.isCancellationRequested) {
+          return this.authenticationCancelled();
+        }
+        switch (response.status) {
+          case AiIntegration.AuthenticateCliWithConnectionStatus.AUTHENTICATED:
+            this.notice = { outcome: 'completed', message: LOGIN_COMPLETED };
+            return didNotStart(AiIntegration.AiIntegrationActionStatus.SUCCEEDED);
+          case AiIntegration.AuthenticateCliWithConnectionStatus.UPGRADE_REQUIRED:
+            this.notice = { outcome: 'failed', message: response.message || CLI_UPGRADE_REQUIRED };
+            return didNotStart(AiIntegration.AiIntegrationActionStatus.FAILED);
+          case AiIntegration.AuthenticateCliWithConnectionStatus.FAILED:
+            this.notice = { outcome: 'failed', message: response.message || LOGIN_FAILED };
+            return didNotStart(AiIntegration.AiIntegrationActionStatus.FAILED);
+          case AiIntegration.AuthenticateCliWithConnectionStatus.INTERACTIVE_LOGIN_REQUIRED:
+            break;
+          default:
+            this.notice = { outcome: 'failed', message: LOGIN_FAILED };
+            return didNotStart(AiIntegration.AiIntegrationActionStatus.FAILED);
+        }
+      }
+      if (cancellation.token.isCancellationRequested) {
+        return this.authenticationCancelled();
+      }
+      const command = await this.languageClient.prepareAuthenticateCliCommand(authenticateParams(pick));
+      if (cancellation.token.isCancellationRequested) {
+        return this.authenticationCancelled();
+      }
+      return this.openInteractiveCommand('SonarQube CLI login', command, LOGIN_NOT_INTERACTIVE);
+    } catch (error) {
+      if (cancellation.token.isCancellationRequested) {
+        return this.authenticationCancelled();
+      }
+      throw error;
+    } finally {
+      this.activeAuthentication = undefined;
+      cancellation.dispose();
+    }
+  }
+
+  private authenticationCancelled(): SetupStart {
+    if (!this.disposed) {
+      this.notice = { outcome: 'cancelled', message: LOGIN_CANCELLED };
+    }
+    return didNotStart(AiIntegration.AiIntegrationActionStatus.CANCELLED);
   }
 
   private async startIntegrate(
@@ -264,6 +524,9 @@ export class CliSetupSession {
   }
 
   private openSetupTerminal(name: string, command: AiIntegration.PrepareCliCommandResponse): SetupStart {
+    if (this.disposed) {
+      return didNotStart(AiIntegration.AiIntegrationActionStatus.CANCELLED);
+    }
     try {
       const terminal = vscode.window.createTerminal({
         name,
