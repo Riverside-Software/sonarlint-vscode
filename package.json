@@ -2,7 +2,7 @@
   "name": "sonarlint-abl",
   "displayName": "CABL",
   "description": "Advanced linter to detect & fix coding issues locally in ABL. Use with SonarQube Server for optimal team performance.",
-  "version": "6.2.99001",
+  "version": "6.3.0",
   "icon": "images/sonarlint_wave_128px.png",
   "publisher": "RiversideSoftware",
   "homepage": "https://riverside-software.fr/",
@@ -862,6 +862,16 @@
           "group": "inline"
         },
         {
+          "command": "SonarLint.ABL.ConnectToSonarQube",
+          "when": "view == sonarlint-abl.ConnectedMode && viewItem =~ /^unresolvedBinding(Server|Unknown)$/",
+          "group": "inline"
+        },
+        {
+          "command": "SonarLint.ABL.ConnectToSonarQube",
+          "when": "view == sonarlint-abl.ConnectedMode && viewItem =~ /^unresolvedBinding(Server|Unknown)$/",
+          "group": "navigation"
+        },
+        {
           "command": "SonarLint.ABL.EditSonarQubeConnection",
           "title": "Edit",
           "when": "view == sonarlint-abl.ConnectedMode && viewItem == sonarqubeConnection",
@@ -1189,7 +1199,7 @@
     "sinon": "^21.0.0",
     "tar": "^7.5.11",
     "underscore": "^1.13.8",
-    "vscode-languageclient": "^10.1.1",
+    "vscode-languageclient": "^11.0.0",
     "zlib": "^1.0.5"
   },
   "devDependencies": {
@@ -1213,7 +1223,7 @@
     "expect.js": "^0.3.1",
     "fancy-log": "^2.0.0",
     "fs-extra": "^11.4.1",
-    "glob": "^13.0.0",
+    "glob": "^14.0.0",
     "istanbul-lib-coverage": "^3.2.2",
     "istanbul-lib-instrument": "^6.0.3",
     "istanbul-lib-report": "^3.0.1",
@@ -1244,6 +1254,7 @@
     "bracketSpacing": true
   },
   "overrides": {
-    "ip-address": "^10.3.1"
+    "ip-address": "^10.3.1",
+    "node-forge": "^1.4.1"
   }
 }

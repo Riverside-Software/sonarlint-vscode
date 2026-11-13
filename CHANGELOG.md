@@ -1,8 +1,17 @@
+## 6.3
+
+* Remove the Java Symbolic Execution analyzer (advanced Java reliability rules) from standalone mode. These rules remain available in Connected Mode with SonarQube Server commercial editions and SonarQube Cloud
+* Update Go analyzer 1.47 -> [1.48](https://github.com/SonarSource/sonar-go/releases/tag/1.48.0.9254)
+* Update PHP analyzer 4.1 -> [4.2](https://github.com/SonarSource/sonar-php/releases/tag/4.2.0.27261)
+* Update IaC analyzer 2.24 -> [2.25](https://github.com/SonarSource/sonar-iac/releases/tag/2.25.0.24536) -> [2.26](https://github.com/SonarSource/sonar-iac/releases/tag/2.26.0.24580) -> [2.27](https://github.com/SonarSource/sonar-iac/releases/tag/2.27.0.24646)
+* Update Java analyzer 8.44 -> [8.46](https://github.com/SonarSource/sonar-java/releases/tag/8.46.0.59609)
+* Update Text & Secrets analyzer 2.53 -> [2.54](https://github.com/SonarSource/sonar-text/releases/tag/2.54.0.13918)
+
 ## 6.2
 
 * Update Text & Secrets analyzer 2.52 -> [2.53](https://github.com/SonarSource/sonar-text/releases/tag/2.53.0.13730)
 * Update IaC analyzer 2.21 -> [2.22](https://github.com/SonarSource/sonar-iac/releases/tag/2.22.0.24243) -> [2.23](https://github.com/SonarSource/sonar-iac/releases/tag/2.23.0.24355) -> [2.24](https://github.com/SonarSource/sonar-iac/releases/tag/2.24.0.24446)
-* Update JS/TS/CSS analyzer 14.1 -> [14.2](https://github.com/SonarSource/SonarJS/releases/tag/14.2.0.46309) -> [14.3](https://github.com/SonarSource/SonarJS/releases/tag/14.3.0.46350)
+* Update JS/TS/CSS analyzer 14.1 -> [14.2](https://github.com/SonarSource/SonarJS/releases/tag/14.2.0.46309) -> [14.3](https://github.com/SonarSource/SonarJS/releases/tag/14.3.0.46350) -> [14.4](https://github.com/SonarSource/SonarJS/releases/tag/14.4.0.46458)
 
 ## 6.1.1
 
